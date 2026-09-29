@@ -1,0 +1,20 @@
+{
+  "id": "./",
+  "name": "Salary & Attendance Calculator",
+  "short_name": "Salary Calc",
+  "description": "Track attendance, lateness, overtime, deductions and additions, and compare the salary you expected with the salary you received. Works offline, in English and Egyptian Arabic.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#ECEFF3",
+  "theme_color": "#1B4B78",
+  "lang": "en",
+  "dir": "auto",
+  "categories": ["finance", "productivity", "business"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

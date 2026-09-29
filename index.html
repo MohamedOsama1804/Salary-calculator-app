@@ -1,0 +1,2759 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Salary &amp; Attendance Calculator</title>
+<!--PWA:START-->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1B4B78" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#161E26" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Salary Calc">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<!--PWA:END-->
+<style>
+:root {
+  --bg: #ECEFF3; --surface: #FFFFFF; --surface-2: #F4F6F8;
+  --ink: #141E28; --muted: #55626F; --line: #D2D9E0; --line-strong: #A9B5C1;
+  --accent: #1B4B78; --accent-ink: #FFFFFF; --accent-soft: #E2ECF5;
+  --pos: #12683F; --pos-soft: #E0F1E8; --neg: #A22B2B; --neg-soft: #FBE6E6;
+  --warn: #754D00; --warn-soft: #FFF1CC;
+  --radius: 6px;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Noto Sans Arabic", Tahoma, sans-serif;
+  color-scheme: light;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E141A; --surface: #161E26; --surface-2: #1C2630;
+    --ink: #E5EBF0; --muted: #9BA9B6; --line: #2A3540; --line-strong: #46535F;
+    --accent: #6BA6DD; --accent-ink: #0A1620; --accent-soft: #1A2B3B;
+    --pos: #5CC796; --pos-soft: #143024; --neg: #F08C8C; --neg-soft: #3A1C1C;
+    --warn: #E8B95A; --warn-soft: #3A2E12;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E141A; --surface: #161E26; --surface-2: #1C2630;
+  --ink: #E5EBF0; --muted: #9BA9B6; --line: #2A3540; --line-strong: #46535F;
+  --accent: #6BA6DD; --accent-ink: #0A1620; --accent-soft: #1A2B3B;
+  --pos: #5CC796; --pos-soft: #143024; --neg: #F08C8C; --neg-soft: #3A1C1C;
+  --warn: #E8B95A; --warn-soft: #3A2E12;
+  color-scheme: dark;
+}
+html { scroll-padding-top: calc(env(safe-area-inset-top, 0px) + 56px); -webkit-text-size-adjust: 100%; overscroll-behavior-y: contain; -webkit-tap-highlight-color: transparent; }
+button, select, input, summary, a { touch-action: manipulation; }
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.45 var(--font); }
+.num, td.num, th.num { font-variant-numeric: tabular-nums; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.pos { color: var(--pos); }
+.neg { color: var(--neg); }
+.muted { color: var(--muted); }
+[hidden] { display: none !important; }
+
+.wrap { max-width: 1120px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.app-header { background: var(--surface); border-bottom: 1px solid var(--line); padding: 14px 0 12px; }
+.app-header h1 { margin: 0; font-size: 20px; font-weight: 650; letter-spacing: -0.005em; }
+.app-header p { margin: 2px 0 0; font-size: 13.5px; color: var(--muted); }
+
+nav.jump { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--surface); border-bottom: 1px solid var(--line); overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
+nav.jump .wrap { display: flex; }
+nav.jump a { display: inline-block; padding: 13px 12px; font-size: 14px; color: var(--muted); text-decoration: none; min-height: 44px; }
+nav.jump a:hover { color: var(--ink); }
+nav.jump a:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+main { padding-bottom: 40px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin: 16px 0; }
+.panel > h2, .h2 { font-size: 17px; font-weight: 650; margin: 0 0 12px; }
+h3 { font-size: 14px; font-weight: 650; margin: 18px 0 8px; }
+h3:first-child { margin-top: 0; }
+p { margin: 0 0 8px; }
+.hint { font-size: 13px; color: var(--muted); }
+.empty { color: var(--muted); font-size: 14.5px; margin: 4px 0; }
+
+.notice { border: 1px solid var(--line-strong); border-radius: var(--radius); padding: 10px 12px; margin: 16px 0; font-size: 14.5px; background: var(--accent-soft); display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.notice.warn { background: var(--warn-soft); color: var(--warn); border-color: var(--warn); }
+.notice.bad { background: var(--neg-soft); color: var(--neg); border-color: var(--neg); }
+.msg { font-size: 14px; margin: 8px 0 0; }
+.msg.error { color: var(--neg); }
+.msg.ok { color: var(--pos); }
+.msg.warn { color: var(--warn); }
+
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field label, .label { font-size: 13px; color: var(--muted); }
+input, select, textarea { font: inherit; font-size: 16px; min-height: 44px; padding: 8px 10px; border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--surface); color: var(--ink); width: 100%; min-width: 0; }
+textarea { min-height: 120px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
+input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, summary:focus-visible, .table-wrap:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+input[aria-invalid="true"] { border-color: var(--neg); }
+input:disabled, select:disabled { background: var(--surface-2); color: var(--muted); }
+.err { font-size: 13px; color: var(--neg); }
+.err:empty { display: none; }
+.check { margin-top: 4px; display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: 15px; cursor: pointer; }
+.check input { width: 22px; height: 22px; min-height: 22px; flex: none; accent-color: var(--accent); }
+.grid { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
+.grid.one { grid-template-columns: 1fr; }
+.grid .span-all, .grid .span-m { grid-column: 1 / -1; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { position: relative; display: inline-block; cursor: pointer; }
+.chip input { position: absolute; opacity: 0; width: 100%; height: 100%; min-height: 0; margin: 0; left: 0; top: 0; cursor: pointer; }
+.chip span { display: inline-flex; align-items: center; justify-content: center; min-width: 52px; min-height: 44px; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: var(--radius); font-size: 14.5px; background: var(--surface); }
+.chip input:checked + span { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+.chip input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.btn { font: inherit; font-size: 15px; font-weight: 600; min-height: 44px; padding: 0 16px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); border-radius: var(--radius); cursor: pointer; }
+.btn:hover { background: var(--surface-2); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.danger { color: var(--neg); border-color: var(--neg); }
+.btn.danger.armed { background: var(--neg); color: var(--surface); }
+.btn.small { min-height: 38px; padding: 0 10px; font-size: 14px; }
+.btn.active { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.actions .btn.primary { flex: 1 1 140px; }
+
+/* Month bar */
+.monthbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; justify-content: space-between; }
+.month-title { font-size: 22px; font-weight: 650; line-height: 1.2; }
+.month-controls { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.month-controls .field { gap: 0; }
+.mc-pick { display: grid; grid-template-columns: 1fr 96px; gap: 8px; }
+.mc-nav { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.mc-nav .btn { padding: 0 8px; white-space: nowrap; }
+
+/* Summary */
+.hero { border-top: 3px solid var(--accent); }
+.answers { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.answer .a-label { font-size: 13px; color: var(--muted); }
+.answer .a-sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
+.answer.primary { grid-column: 1 / -1; }
+.big { font-size: clamp(32px, 9vw, 46px); font-weight: 700; line-height: 1.1; letter-spacing: -0.015em; margin: 2px 0; }
+.mid { font-size: 21px; font-weight: 650; line-height: 1.2; margin: 2px 0; white-space: nowrap; }
+.cur { font-size: 0.45em; font-weight: 600; color: var(--muted); letter-spacing: 0; }
+.mid .cur { font-size: 0.62em; }
+.badge { display: inline-block; font-size: 12.5px; font-weight: 700; letter-spacing: 0.03em; padding: 2px 8px; border-radius: 3px; border: 1px solid currentColor; vertical-align: middle; }
+.badge.under { color: var(--neg); background: var(--neg-soft); }
+.badge.over { color: var(--pos); background: var(--pos-soft); }
+.badge.match { color: var(--accent); background: var(--accent-soft); }
+.stats { display: grid; grid-template-columns: repeat(2, 1fr); border-top: 1px solid var(--line); margin-top: 16px; }
+.stat { padding: 10px 0 0; }
+.stat .s-label { font-size: 12.5px; color: var(--muted); }
+.stat .s-val { font-size: 18px; font-weight: 650; }
+.linkbtn { text-align: start; font: inherit; font-size: 14px; color: var(--accent); background: none; border: 0; padding: 0; min-height: 32px; cursor: pointer; text-decoration: underline; }
+
+.ledger { display: grid; grid-template-columns: 1fr; column-gap: 32px; margin: 0; }
+.ledger .row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+.ledger .row dt { color: var(--muted); font-size: 14.5px; margin: 0; }
+.ledger .row dd { margin: 0; font-weight: 600; text-align: end; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ledger .row.total { border-bottom: 0; border-top: 2px solid var(--ink); padding-top: 12px; margin-top: 4px; grid-column: 1 / -1; }
+.ledger .row.total dt { color: var(--ink); font-weight: 650; }
+.ledger .row.total dd { font-size: 20px; }
+.ledger .row.sub dt { padding-inline-start: 14px; }
+.ledger .row.sep { border-top: 1px solid var(--line-strong); }
+.ledger.single { column-gap: 0; }
+
+/* details/summary panels */
+details.panel > summary { list-style: none; cursor: pointer; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; min-height: 44px; padding: 0; }
+details.panel > summary::-webkit-details-marker { display: none; }
+details.panel > summary .h2 { margin: 0; }
+details.panel > summary .summary-line { font-size: 13.5px; color: var(--muted); flex: 1 1 200px; }
+details.panel > summary .toggle { font-size: 14px; color: var(--accent); font-weight: 600; margin-inline-start: auto; }
+details.panel:not([open]) > summary .toggle::after { content: attr(data-show); }
+details.panel[open] > summary .toggle::after { content: attr(data-hide); }
+details.panel[open] > summary { margin-bottom: 8px; }
+
+/* Tables */
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); -webkit-overflow-scrolling: touch; }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+table.att { min-width: 800px; }
+table.adj { min-width: 520px; }
+th, td { padding: 8px 6px; border-bottom: 1px solid var(--line); text-align: start; vertical-align: top; }
+th { font-size: 12.5px; font-weight: 650; color: var(--muted); background: var(--surface-2); text-align: start; }
+td.num, th.num { text-align: end; }
+td.num { white-space: nowrap; }
+tbody tr:last-child td { border-bottom: 0; }
+table.att th:first-child, table.att td:first-child { position: sticky; inset-inline-start: 0; background: var(--surface); z-index: 1; box-shadow: 1px 0 0 var(--line); white-space: nowrap; }
+table.att th:first-child { background: var(--surface-2); }
+table.att tfoot td { font-weight: 650; border-top: 2px solid var(--line-strong); border-bottom: 0; background: var(--surface-2); }
+table.att tfoot td:first-child { background: var(--surface-2); }
+tr.invalid-row td { background: var(--neg-soft); }
+tr.invalid-row td:first-child { background: var(--neg-soft); }
+tr.selected td { background: var(--accent-soft); }
+tr.selected td:first-child { background: var(--accent-soft); }
+td.act { white-space: nowrap; }
+td.act .btn.small { min-height: 34px; padding: 0 7px; font-size: 13px; }
+td.act { padding-right: 8px; }
+td .sub { display: block; font-size: 12px; color: var(--muted); }
+.tag { display: inline-block; padding: 1px 7px; border: 1px solid var(--line-strong); border-radius: 3px; font-size: 12.5px; white-space: nowrap; }
+.tag.late { color: var(--warn); background: var(--warn-soft); border-color: var(--warn); }
+.tag.ot { color: var(--pos); background: var(--pos-soft); border-color: var(--pos); }
+.tag.absent { color: var(--neg); background: var(--neg-soft); border-color: var(--neg); }
+.tag.off { color: var(--muted); background: var(--surface-2); }
+
+.detail-panel { margin-top: 12px; border: 1px solid var(--line-strong); border-radius: var(--radius); padding: 12px; background: var(--surface-2); }
+.detail-panel h3 { margin-top: 0; }
+.detail-panel ul { margin: 0; padding-inline-start: 18px; font-size: 14.5px; }
+.detail-panel li { margin-bottom: 4px; }
+
+.tier-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: end; margin-bottom: 8px; }
+.formula { display: block; font-size: 13px; font-weight: 400; color: var(--muted); }
+.ledger .row dt { min-width: 0; }
+.verdict { font-size: 16px; font-weight: 600; margin: 12px 0 4px; }
+.preview { font-size: 14px; color: var(--ink); margin: 6px 0 0; }
+.preview:empty { display: none; }
+
+@media (min-width: 640px) {
+  .month-controls { width: auto; flex-direction: row; align-items: flex-end; }
+  .mc-pick { grid-template-columns: 150px 96px; }
+  .mc-nav { grid-template-columns: repeat(3, auto); }
+  .grid.c3 { grid-template-columns: repeat(3, 1fr); }
+  .grid.c4 { grid-template-columns: repeat(4, 1fr); }
+  .grid .span-m { grid-column: span 2; }
+}
+@media (min-width: 760px) {
+  .answers { grid-template-columns: 1.5fr 1fr 1fr; gap: 0; }
+  .answer { padding: 0 20px; }
+  .answer.primary { grid-column: auto; padding-inline-start: 0; }
+  .answer + .answer { border-inline-start: 1px solid var(--line); }
+  .stats { grid-template-columns: repeat(4, 1fr); }
+  .ledger { grid-template-columns: 1fr 1fr; }
+  .ledger.single { grid-template-columns: 1fr; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+  .two-col > .panel { margin: 16px 0; }
+}
+@media (min-width: 900px) {
+  .actions .btn.primary { flex: 0 0 auto; }
+}
+@media (min-width: 1100px) { .scroll-hint { display: none; } }
+@media print { nav.jump, .actions, .notice { display: none; } }
+
+/* Language switch */
+.lang-row { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+.lang-switch { display: flex; direction: ltr; width: 100%; max-width: 320px; border: 1px solid var(--line-strong); border-radius: var(--radius); overflow: hidden; }
+.lang-switch button { flex: 1; font: inherit; font-size: 15px; font-weight: 600; min-height: 44px; padding: 0 16px; border: 0; background: var(--surface); color: var(--ink); cursor: pointer; }
+.lang-switch button + button { border-left: 1px solid var(--line-strong); }
+.lang-switch button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.lang-switch button:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
+.emp-line { font-size: 14px; color: var(--muted); margin-top: 2px; }
+.emp-line:empty { display: none; }
+.saved-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.saved-row .s-name { font-weight: 600; }
+.saved-row .s-meta { font-size: 13px; color: var(--muted); }
+.saved-row.current .s-name::after { content: attr(data-cur-mark); font-weight: 400; color: var(--accent); font-size: 13px; margin-inline-start: 8px; }
+textarea.plain { font-family: inherit; font-size: 16px; min-height: 84px; }
+td .memo { display: block; font-size: 12px; color: var(--muted); max-width: 160px; overflow-wrap: anywhere; }
+
+/* Right-to-left (Arabic) */
+:lang(ar) body { line-height: 1.65; }
+:lang(ar) *, :lang(ar) *::before, :lang(ar) *::after { letter-spacing: 0 !important; }
+[dir="rtl"] input[type="number"], [dir="rtl"] input[type="time"], [dir="rtl"] input[type="date"] { direction: ltr; text-align: right; }
+[dir="rtl"] table.att th:first-child, [dir="rtl"] table.att td:first-child { box-shadow: -1px 0 0 var(--line); }
+[dir="rtl"] .summary-line { text-align: start; }
+#backup-text { direction: ltr; text-align: left; }
+@media (display-mode: standalone) { .app-header { padding-top: 10px; } }
+
+/* Expenses (additive, reuses existing tokens only) */
+table.exp { min-width: 620px; }
+.cat-bars { display: flex; flex-direction: column; gap: 10px; }
+.cat-bar-top { display: flex; justify-content: space-between; gap: 12px; font-size: 14.5px; margin-bottom: 4px; }
+.cat-bar-track { height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
+.cat-bar-fill { height: 100%; background: var(--accent); border-radius: 4px; }
+
+/* Expenses overlay: dedicated top-level tab (reuses existing tokens/classes only) */
+.expenses-overlay { position: fixed; inset: 0; z-index: 50; background: var(--bg); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.expenses-overlay[hidden] { display: none; }
+.expenses-overlay-bar { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 12px; padding: max(12px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 12px max(16px, env(safe-area-inset-left, 0px)); background: var(--surface); border-bottom: 1px solid var(--line); }
+.expenses-overlay-title { font-size: 17px; font-weight: 650; }
+.expenses-overlay .wrap { padding-top: 4px; padding-bottom: 40px; }
+body.expenses-open { overflow: hidden; }
+
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="wrap">
+    <div class="lang-row">
+      <div class="lang-switch" role="group" aria-label="Language / اللغة">
+        <button type="button" data-lang="en" aria-pressed="true">English</button>
+        <button type="button" data-lang="ar" lang="ar" aria-pressed="false">العربية</button>
+      </div>
+    </div>
+    <h1 data-i18n="app_title"></h1>
+    <p data-i18n="app_sub"></p>
+  </div>
+</header>
+
+<nav class="jump" data-i18n-aria="nav_aria">
+  <div class="wrap">
+    <a href="#month" data-i18n="nav_month"></a>
+    <a href="#summary" data-i18n="nav_summary"></a>
+    <a href="#settings" data-i18n="nav_settings"></a>
+    <a href="#quick-add" data-i18n="nav_add"></a>
+    <a href="#attendance" data-i18n="nav_records"></a>
+    <a href="#deductions" data-i18n="nav_deductions"></a>
+    <a href="#additions" data-i18n="nav_additions"></a>
+    <a href="#actual" data-i18n="nav_actual"></a>
+    <a href="#expenses" data-i18n="nav_expenses"></a>
+    <a href="#reconciliation" data-i18n="nav_recon"></a>
+    <a href="#calc-detail" data-i18n="nav_calc"></a>
+    <a href="#data" data-i18n="nav_data"></a>
+  </div>
+</nav>
+
+<main class="wrap">
+
+  <div class="notice" id="install-banner" hidden>
+    <span data-i18n="install_text"></span>
+    <span class="actions" style="margin:0">
+      <button type="button" class="btn small primary" id="install-btn" data-i18n="install_btn"></button>
+      <button type="button" class="btn small" id="install-dismiss" data-i18n="install_no"></button>
+    </span>
+  </div>
+  <div class="notice" id="demo-banner" hidden>
+    <span data-i18n="demo_text"></span>
+    <span class="actions" style="margin:0">
+      <button type="button" class="btn small" id="demo-clear" data-i18n="demo_clear"></button>
+      <button type="button" class="btn small" id="demo-dismiss" data-i18n="demo_keep"></button>
+    </span>
+  </div>
+  <div class="notice warn" id="storage-warning" hidden data-i18n="storage_warn"></div>
+  <div class="notice warn" id="data-notice" hidden></div>
+
+  <!-- Current month -->
+  <section class="panel monthbar" id="month">
+    <div>
+      <div class="label" data-i18n="month_current"></div>
+      <div class="month-title" id="month-title"></div>
+      <div id="month-emp"></div>
+    </div>
+    <div class="month-controls">
+      <div class="mc-pick">
+        <div class="field"><label class="sr" for="m-month" data-i18n="month_label"></label><select id="m-month"></select></div>
+        <div class="field"><label class="sr" for="m-year" data-i18n="year_label"></label><input id="m-year" type="number" inputmode="numeric" min="2000" max="2100" step="1"></div>
+      </div>
+      <div class="mc-nav">
+        <button type="button" class="btn" id="m-prev" data-i18n="month_prev"></button>
+        <button type="button" class="btn" id="m-next" data-i18n="month_next"></button>
+        <button type="button" class="btn" id="m-today" data-i18n="month_this"></button>
+      </div>
+    </div>
+    <div class="err" id="m-error" role="alert" style="width:100%"></div>
+  </section>
+
+  <!-- Summary -->
+  <section class="panel hero" id="summary">
+    <h2 data-i18n="sum_h"></h2>
+    <div id="summary-hero"></div>
+    <div id="summary-note"></div>
+    <h3 style="margin-top:20px" data-i18n="sum_details"></h3>
+    <dl class="ledger" id="summary-ledger"></dl>
+  </section>
+
+  <!-- Salary settings -->
+  <details class="panel" id="settings">
+    <summary><span class="h2" data-i18n="set_h"></span><span class="summary-line" id="settings-line"></span><span class="toggle"></span></summary>
+    <div id="settings-body"></div>
+  </details>
+
+  <!-- Quick add -->
+  <section class="panel" id="quick-add">
+    <h2 id="att-title"></h2>
+    <form id="att-form" novalidate autocomplete="off">
+      <div class="grid c4">
+        <div class="field"><label for="att-date" data-i18n="f_date"></label><input type="date" id="att-date" required></div>
+        <div class="field"><label for="att-in" data-i18n="f_in"></label><input type="time" id="att-in"></div>
+        <div class="field"><label for="att-out" data-i18n="f_out"></label><input type="time" id="att-out"></div>
+        <div class="field"><label for="att-status" data-i18n="f_status"></label><select id="att-status"></select></div>
+        <div class="field span-all"><label for="att-memo" data-i18n="f_note"></label><input id="att-memo" maxlength="200"></div>
+      </div>
+      <p class="hint" id="att-status-hint" style="margin:8px 0 0"></p>
+      <div class="preview" id="att-preview" aria-live="polite"></div>
+      <div class="msg error" id="att-error" role="alert" hidden></div>
+      <div class="msg ok" id="att-ok" aria-live="polite" hidden></div>
+      <div class="actions">
+        <button type="submit" class="btn primary" id="att-submit"></button>
+        <button type="button" class="btn" id="att-official" data-i18n="btn_official"></button>
+        <button type="button" class="btn" id="att-cancel" hidden data-i18n="btn_cancel_edit"></button>
+      </div>
+    </form>
+  </section>
+
+  <!-- Attendance records -->
+  <section class="panel" id="attendance">
+    <h2 data-i18n="att_h"></h2>
+    <div class="notice bad" id="att-alert" hidden></div>
+    <div id="att-table"></div>
+    <div id="att-detail"></div>
+  </section>
+
+  <div class="two-col">
+    <section class="panel" id="deductions"></section>
+    <section class="panel" id="additions"></section>
+  </div>
+
+  <!-- Actual salary received -->
+  <section class="panel" id="actual">
+    <h2 data-i18n="act_h"></h2>
+    <div class="field" style="max-width:340px">
+      <label for="actual-input" id="actual-label"></label>
+      <input type="number" id="actual-input" inputmode="decimal" step="any" min="0" data-i18n-ph="act_ph">
+      <div class="err" id="actual-error" role="alert"></div>
+    </div>
+    <div class="actions" style="margin-top:8px"><button type="button" class="btn small" id="actual-clear" data-i18n="act_clear"></button></div>
+    <div id="actual-result"></div>
+    <div class="field" style="margin-top:20px">
+      <label for="month-notes" data-i18n="notes_label"></label>
+      <textarea id="month-notes" maxlength="2000" style="font-family:inherit;font-size:16px;min-height:88px"></textarea>
+    </div>
+  </section>
+
+  <!-- Reconciliation -->
+  <section class="panel" id="reconciliation">
+    <h2 data-i18n="rec_h"></h2>
+    <div id="recon"></div>
+  </section>
+
+  <!-- Detailed calculation -->
+  <details class="panel" id="calc-detail">
+    <summary><span class="h2" data-i18n="calc_h"></span><span class="summary-line" id="calc-line"></span><span class="toggle"></span></summary>
+    <div id="calc-body"></div>
+  </details>
+
+  <!-- Data -->
+  <section class="panel" id="data">
+    <h2 data-i18n="data_h"></h2>
+    <p class="hint" data-i18n="data_hint"></p>
+    <div id="data-status" class="hint" style="margin-bottom:8px"></div>
+    <div class="actions">
+      <button type="button" class="btn primary" id="export-btn" data-i18n="btn_export"></button>
+      <button type="button" class="btn" id="import-btn" data-i18n="btn_import"></button>
+      <input type="file" id="import-file" accept=".json,application/json" class="sr" tabindex="-1">
+    </div>
+    <div class="msg" id="data-msg" aria-live="polite" hidden></div>
+    <div class="notice" id="import-confirm" hidden style="margin-bottom:0"></div>
+    <details id="backup-text-box" style="margin-top:12px">
+      <summary style="min-height:44px;cursor:pointer;display:flex;align-items:center;color:var(--accent);font-weight:600" data-i18n="bk_summary"></summary>
+      <div class="field"><label for="backup-text" data-i18n="bk_label"></label><textarea id="backup-text" class="mono" spellcheck="false" dir="ltr"></textarea></div>
+      <div class="actions">
+        <button type="button" class="btn" id="copy-btn" data-i18n="bk_copy"></button>
+        <button type="button" class="btn" id="import-text-btn" data-i18n="bk_import"></button>
+      </div>
+    </details>
+    <h3 style="margin-top:24px" data-i18n="sm_h"></h3>
+    <div id="saved-months"></div>
+    <h3 style="margin-top:24px" data-i18n="clear_h"></h3>
+    <div class="actions" style="margin-top:0">
+      <button type="button" class="btn danger" id="clear-month-btn" data-i18n="btn_clear_month"></button>
+      <button type="button" class="btn danger" id="reset-btn" data-i18n="btn_reset"></button>
+    </div>
+    <p class="hint" style="margin-top:8px" data-i18n="clear_hint"></p>
+  </section>
+</main>
+
+<!-- Expenses: dedicated top-level tab, entirely separate from the main scrolling page -->
+<div class="expenses-overlay" id="expenses-overlay" hidden>
+  <div class="expenses-overlay-bar">
+    <button type="button" class="btn small" id="expenses-back" data-i18n="exp_back"></button>
+    <span class="expenses-overlay-title" data-i18n="exp_h"></span>
+  </div>
+  <div class="wrap">
+    <section class="panel" id="expenses">
+      <h2 id="exp-title"></h2>
+      <form id="exp-form" novalidate autocomplete="off">
+        <div class="grid">
+          <div class="field"><label for="exp-amount" data-cur-i18n="f_amount"></label><input id="exp-amount" type="number" inputmode="decimal" step="any" min="0"></div>
+          <div class="field"><label for="exp-date" data-i18n="f_date"></label><input id="exp-date" type="date"></div>
+          <div class="field span-all"><label for="exp-category" data-i18n="exp_category"></label><select id="exp-category"></select></div>
+          <div class="field span-all" id="exp-custom-wrap" hidden><label for="exp-custom" data-i18n="exp_custom_label"></label><input id="exp-custom" maxlength="40"></div>
+          <div class="field span-all"><label for="exp-note" data-i18n="f_note"></label><input id="exp-note" maxlength="200"></div>
+        </div>
+        <div class="msg error" id="exp-error" role="alert" hidden></div>
+        <div class="actions">
+          <button type="submit" class="btn primary" id="exp-submit"></button>
+          <button type="button" class="btn" id="exp-cancel" hidden data-i18n="btn_cancel_edit"></button>
+        </div>
+      </form>
+
+      <div id="exp-summary" style="margin-top:20px"></div>
+
+      <h3 style="margin-top:20px" data-i18n="exp_list_h"></h3>
+      <div class="grid c3">
+        <div class="field"><label for="exp-filter-cat" data-i18n="exp_category"></label><select id="exp-filter-cat"></select></div>
+        <div class="field"><label for="exp-filter-from" data-i18n="exp_filter_from"></label><input id="exp-filter-from" type="date"></div>
+        <div class="field"><label for="exp-filter-to" data-i18n="exp_filter_to"></label><input id="exp-filter-to" type="date"></div>
+      </div>
+      <div class="actions" style="margin-top:8px"><button type="button" class="btn small" id="exp-filter-clear" data-i18n="exp_filter_clear"></button></div>
+      <div id="exp-table" style="margin-top:16px"></div>
+    </section>
+  </div>
+</div>
+
+<script>
+(function () {
+'use strict';
+/* =====================================================================
+   TRANSLATIONS
+   English keeps the original interface text. Arabic is written in natural
+   Egyptian colloquial (not formal or legal Arabic). Numbers stay as digits,
+   and anything the user types (names, notes) is never translated.
+   ===================================================================== */
+const I18N = {
+en: {
+  months: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+  days_short: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+  days_full: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+  adj_ded_names: ['Insurance', 'Taxes', 'Loan installment', 'Absence deduction', 'Penalty', 'Other'],
+  adj_add_names: ['Bonus', 'Incentive', 'Allowance', 'Commission', 'Other'],
+  pl_workday: { one: '{n} working day', other: '{n} working days' },
+  pl_recday: { one: '{n} recorded day', other: '{n} recorded days' },
+  pl_rec: { one: '{n} record', other: '{n} records' },
+  pl_attrec: { one: '{n} attendance record', other: '{n} attendance records' },
+  pl_month: { one: '{n} month', other: '{n} months' },
+  pl_entry: { one: '{n} entry', other: '{n} entries' },
+  pl_item: { one: '{n} invalid item', other: '{n} invalid items' },
+  pl_lateday: { one: '{n} late day', other: '{n} late days' },
+  pl_expense: { one: '{n} expense', other: '{n} expenses' },
+
+  app_title: 'Salary & Attendance Calculator',
+  app_sub: 'All figures are estimates based on the rules and records you enter. Changes are saved automatically on this device.',
+  nav_aria: 'Jump to section',
+  nav_month: 'Month', nav_summary: 'Summary', nav_settings: 'Settings', nav_add: 'Add attendance', nav_records: 'Records',
+  nav_deductions: 'Deductions', nav_additions: 'Additions', nav_actual: 'Actual salary', nav_expenses: 'Expenses', nav_recon: 'Reconciliation', nav_calc: 'Calculation', nav_data: 'Data',
+  show: 'Show', hide: 'Hide', list_sep: ', ',
+  op_mul: 'x', op_div: '/',
+  u_h: 'h', u_m: 'm', u_hours: 'h',
+
+  install_text: 'Install this calculator on your phone to use it like an app, even offline.',
+  install_btn: 'Install app', install_no: 'Not now',
+  demo_text: 'Demo data is loaded for September 2026. Replace it with your own settings and attendance.',
+  demo_clear: 'Clear demo data', demo_keep: 'Keep for now',
+  storage_warn: 'Browser storage is unavailable, so changes will be lost when you close or refresh this page. Use Export data in the Data section to keep a backup.',
+  dn_recovered: 'Your saved data could not be read, so the last backup copy kept on this device was restored. Please export a backup file now.',
+  dn_unreadable: 'Your saved data could not be read and no backup copy was found. The unreadable copy was kept separately on this device and was not deleted.',
+
+  month_current: 'Current month', month_label: 'Month', year_label: 'Year',
+  month_prev: 'Previous', month_next: 'Next', month_this: 'This month',
+  m_err_range: 'Years from 2000 to 2100 are supported.', m_err_year: 'Enter a year from 2000 to 2100.',
+  emp_name: 'Employee name (optional)', emp_line: 'Employee: {name}',
+
+  sum_h: 'Summary', sum_details: 'Month details',
+  sum_earned: 'Estimated net salary earned so far',
+  sum_from: 'Estimated from {n}, through {date}.',
+  sum_none: 'No attendance recorded for this month yet.',
+  sum_expected: 'Expected at month end',
+  sum_exp_incl: 'Estimated. Includes {n} without a record or still to come, at full pay, with no lateness or overtime assumed.',
+  sum_exp_none: 'Estimated from the days recorded. No other working days are added.',
+  sum_actual: 'Actual salary received', sum_not_entered: 'Not entered',
+  sum_enter_link: 'Enter the amount you received', sum_enter_rest: 'to see why it differs from the expected salary.',
+  sum_vs: 'Actual salary vs expected', sum_received: 'Received {amt}.',
+  b_under: 'UNDERPAID', b_over: 'OVERPAID', b_match: 'MATCHES EXPECTED',
+  sum_unrec_one: '{n} up to today has no record. It is left out of the earned-so-far figure but included in the expected month-end figure. Add attendance, or mark the day as Day Off, Holiday, Absent or Leave.',
+  sum_unrec_many: '{n} up to today have no record. They are left out of the earned-so-far figure but included in the expected month-end figure. Add attendance, or mark the day as Day Off, Holiday, Absent or Leave.',
+  l_days_worked: 'Days worked', l_days_late: 'Days late', l_overtime: 'Overtime', l_days_absent: 'Days absent',
+  l_monthly: 'Monthly salary', l_late_min: 'Total late minutes', l_ot_hours: 'Total overtime hours',
+  l_hol_leave: 'Holiday and leave days', l_unpaid: '(unpaid)',
+  l_base: 'Base salary earned', l_late_ded: 'Total late deductions', l_ot_earn: 'Total overtime earnings',
+  l_other_ded: 'Other deductions', l_other_add: 'Other additions', l_net_so_far: 'Estimated Net Salary Earned So Far',
+  l_difference: 'Difference',
+
+  set_h: 'Salary Settings',
+  set_line: '{sal} per month, {days} working days, {hrs} h per day, {start} to {end}.',
+  set_hint: 'Enter the rules your company uses. Settings are saved for each month separately, and a new month starts as a copy of the previous one.',
+  set_pay: 'Pay', set_salary: 'Monthly salary', set_currency: 'Currency', set_workdays: 'Working days per month', set_hours: 'Standard working hours per day',
+  set_schedule: 'Schedule', set_start: 'Official work start time', set_end: 'Official work end time',
+  set_grace: 'Grace period for late arrival (minutes)', set_grace_mode: 'When the grace period is passed',
+  set_grace_excess: 'Count only the minutes beyond it', set_grace_full: 'Count all late minutes',
+  set_overnight: 'Allow check-out after midnight (overnight shifts)',
+  set_late_h: 'Late deductions', set_late_method: 'Company method for late arrival',
+  lm_per_minute: 'Per minute, prorated from the hourly rate', lm_per_minute_fixed: 'Per minute, fixed amount',
+  lm_per_hour: 'Per hour, each started hour', lm_daily: 'Share of the daily salary per late day', lm_custom: 'Custom rule (tiers)',
+  rate_mult: 'Late deduction rate (multiplier)', rate_hint_minute: '1 deducts exactly the pay for the minutes missed. 2 deducts double.',
+  rate_fixed: 'Amount per late minute ({cur})', rate_hint_fixed: 'This amount is deducted for every counted late minute.',
+  rate_hint_hour: 'Late time is rounded up to whole hours. 1 deducts the hourly rate for each started hour.',
+  rate_daily: 'Share of the daily salary per late day', rate_hint_daily: '0.25 deducts a quarter of the daily salary on each day you are late.',
+  tier_unit: 'Tier deductions are in', tier_unit_days: 'Days of pay (share of the daily salary)', tier_unit_amount: 'A fixed amount',
+  tier_hint: 'The highest tier reached by the counted late minutes applies. Late minutes are counted after the grace period rule.',
+  tier_from: 'Late minutes from', tier_deduct: 'Deduct ({unit})', tier_days_word: 'days of pay',
+  tier_none: 'No tiers yet, so no late deduction applies. Add a tier.', tier_add: 'Add tier', b_remove: 'Remove',
+  tier_err_from: 'Late minutes must be a whole number from 0 to 1440.', tier_err_value: 'The deduction must be a number of 0 or more.', tier_max: 'You can add up to 20 tiers.',
+  set_ot_h: 'Overtime', set_ot_basis: 'Overtime is counted from', set_ot_after_end: 'Time worked after the official end time', set_ot_beyond: 'Hours worked beyond the standard hours',
+  set_ot_mult: 'Overtime rate multiplier', set_ot_min: 'Minimum overtime to count (minutes)',
+  set_days_h: 'Weekends, holidays and leave', set_weekend: 'Weekend days (optional)',
+  set_weekend_hint: 'Weekend days are left out of the working days that still need a record.',
+  set_weekend_working: 'Weekend days count as working days (attendance on them is paid like any other day)',
+  set_weekend_working_hint: 'When this is off, attendance on a weekend day is paid as overtime only.',
+  set_hol_paid: 'Holidays are paid (a Holiday earns the daily salary)', set_leave_paid: 'Leave is paid (a Leave day earns the daily salary)',
+  v_restored: 'The previous value was restored.',
+  v_salary_num: 'Enter the monthly salary as a number.', v_salary_neg: 'Salary cannot be negative.', v_salary_big: 'Salary is too large.',
+  v_cur_empty: 'Enter a currency code, for example EGP.', v_cur_long: 'Use 8 characters or fewer.',
+  v_days: 'Enter a whole number from 1 to 31.', v_hours: 'Enter hours greater than 0 and up to 24.', v_time: 'Enter a valid time.',
+  v_same: 'Start and end time cannot be the same.',
+  v_end_before: 'End time must be later than start time. Turn on overnight shifts if the shift ends after midnight.',
+  v_overnight_off: 'The end time is not later than the start time. Change the times before turning this off.',
+  v_grace: 'Enter minutes from 0 to 480.', v_invalid: 'Invalid value.', v_rate: 'Enter a number of 0 or more.',
+  v_rate_daily: 'Enter a share from 0 to 1 (0.25 means a quarter of the daily salary).', v_big: 'Value is too large.', v_mult: 'Enter a multiplier from 0 to 10.',
+
+  att_add_h: 'Add Attendance', att_edit_h: 'Edit Attendance: {date}',
+  f_date: 'Date', f_in: 'Check-in', f_out: 'Check-out', f_status: 'Status', f_note: 'Note (optional)', f_name: 'Name', f_amount: 'Amount ({cur})',
+  btn_add: 'Add', btn_save: 'Save changes', btn_official: 'Use official times', btn_cancel_edit: 'Cancel edit', b_cancel: 'Cancel',
+  st_auto: 'Automatic', st_present: 'Present', st_late: 'Late', st_overtime: 'Overtime', st_late_overtime: 'Late + Overtime',
+  st_absent: 'Absent', st_dayoff: 'Day Off', st_holiday: 'Holiday', st_leave: 'Leave',
+  sh_auto: 'The status is worked out from the times you enter: Present, Late, Overtime or Late + Overtime.',
+  sh_present: 'Counts as a normal working day. Late time and overtime are ignored. Times are optional.',
+  sh_late: 'Counts as a working day. The late deduction applies and overtime is ignored.',
+  sh_overtime: 'Counts as a working day. Overtime applies and the late deduction is ignored.',
+  sh_late_overtime: 'Counts as a working day. Both the late deduction and overtime apply.',
+  sh_absent: 'No pay for this day. Times are not needed.',
+  sh_dayoff: 'No pay and no deduction. It is not counted as an absence.',
+  sh_holiday: 'Paid or unpaid according to Salary Settings. It never creates a deduction.',
+  sh_leave: 'Paid or unpaid according to Salary Settings. It never creates a deduction.',
+  pv_prefix: 'Preview: {parts}.', pv_late: 'late {d} counted ({amt})', pv_no_late: 'no late deduction', pv_ot: 'overtime {d} ({amt})',
+  pv_no_ot: 'no overtime', pv_no_out: 'no check-out yet', pv_net: 'net for the day {amt}',
+  att_added: 'Added {date}.', att_saved: 'Saved {date}.',
+  w_no_checkout: 'Check-out is missing, so hours and overtime are not calculated.',
+  e_date_required: 'Choose a date.', e_date_invalid: 'The date is not valid.',
+  e_date_month: 'The date must be in {month}. Change the month at the top to add other months.',
+  e_dup: 'A record for {date} already exists. Use Edit in the table to change it.',
+  e_ci_bad: 'The check-in time is not valid.', e_co_bad: 'The check-out time is not valid.', e_ci_req: 'Check-in time is required.',
+  e_ci_before_co: 'Enter a check-in time before the check-out time.', e_co_same: 'Check-out must be different from check-in.',
+  e_co_earlier: 'Check-out cannot be earlier than check-in. Turn on overnight shifts in Salary Settings if the shift ends after midnight.',
+
+  att_h: 'Attendance Records', att_scroll: 'Swipe the table sideways to see every column, Edit and Delete.',
+  att_aria: 'Attendance records, scrolls sideways on small screens', att_caption: 'Attendance records, amounts in {cur}',
+  att_empty: 'No attendance records for {month}. Use the form above to add the first day.',
+  att_invalid: 'Invalid: {err}', att_weekend_work: 'weekend work', att_raw: 'raw {d}', att_in_grace: '{d} in grace',
+  att_alert_one: '{n} cannot be calculated with the current settings and is left out of every total: ',
+  att_alert_many: '{n} cannot be calculated with the current settings and are left out of every total: ',
+  att_capped: 'Paid days exceed the working days in the settings, so base salary is limited to the monthly salary. The Net column shows each day on its own.',
+  th_date: 'Date', th_day: 'Day', th_in: 'Check-in', th_out: 'Check-out', th_status: 'Status', th_hours: 'Hours', th_late: 'Late', th_ot: 'Overtime',
+  th_ded: 'Deduction', th_otpay: 'Overtime pay', th_net: 'Net', th_actions: 'Actions', th_total: 'Total', th_amount: 'Amount',
+  b_details: 'Details', b_edit: 'Edit', b_delete: 'Delete', b_confirm: 'Confirm', b_close: 'Close',
+
+  dl_title: 'Calculation for {date}',
+  dl_status_auto: 'Status: {label} (worked out from the times).', dl_status_manual: 'Status: {label} (set manually).',
+  dl_absent: 'Absent: no base pay for this day. Nothing else is deducted.',
+  dl_dayoff: 'Day off: no pay and no deduction. It is not counted as absent.',
+  dl_paid_holiday: 'Paid holiday: base pay is the daily rate {rate}. No deduction.', dl_paid_leave: 'Paid leave: base pay is the daily rate {rate}. No deduction.',
+  dl_unpaid_holiday: 'Unpaid holiday (see Salary Settings): no base pay. No deduction.', dl_unpaid_leave: 'Unpaid leave (see Salary Settings): no base pay. No deduction.',
+  dl_weekend: 'This is a weekend day and weekend days are not counted as working days. There is no base pay or late deduction; all time worked is paid as overtime.',
+  dl_base: 'Base pay: daily rate {rate} ({sal} / {days} working days).',
+  dl_nolate: 'Check-in {ci} is on or before the official start ({start}). No lateness.',
+  dl_late_base: 'Check-in {ci} is {raw} min after the official start ({start}).',
+  dl_grace_within: 'That is within the {g} min grace period, so 0 min are counted.',
+  dl_grace_full: 'It is beyond the {g} min grace period, so all {raw} min are counted.',
+  dl_grace_excess: 'After removing the {g} min grace period, {c} min are counted.',
+  dl_late_ignored: 'The status is set to {label}, so late time is ignored.',
+  dl_late_ded: 'Late deduction: {formula}. Rounded: {amt}.',
+  f_per_minute: '{mins} min x ({hourly} hourly rate / 60) x {rate}', f_fixed: '{mins} min x {amt} per minute',
+  f_hour: '{h} started hour(s) x {hourly} hourly rate x {rate}', f_daily: '{daily} daily rate x {rate}',
+  f_custom: 'custom tier for {mins} late minutes', f_cap: ', limited to the daily rate {daily}',
+  dl_ot_weekend: 'Overtime: {worked} worked on a weekend day.',
+  dl_ot_hours: 'Overtime: {worked} worked is {ot} more than the standard {h} hours.',
+  dl_ot_end: 'Overtime: check-out {co} is {ot} after the official end ({end}).',
+  dl_ot_pay: 'Overtime pay: {h} h x {hourly} hourly rate x {mult} = {amt}.',
+  dl_ot_ignored: 'The status is set to {label}, so overtime is ignored.',
+  dl_no_ot_weekend: 'No overtime: no time worked.',
+  dl_no_ot_std: 'No overtime: the time worked does not go beyond the standard hours.',
+  dl_no_ot_end: 'No overtime: the time worked does not go beyond the official end time.',
+  dl_no_ot_std_min: 'No overtime: the time worked does not go beyond the standard hours by at least {m} min.',
+  dl_no_ot_end_min: 'No overtime: the time worked does not go beyond the official end time by at least {m} min.',
+  dl_no_checkout: 'Check-out is empty, so hours and overtime are not calculated.',
+  dl_net: 'Net for the day: {base} base \u2212 {late} late + {ot} overtime = {net}.',
+  dl_note: 'Note: {note}',
+
+  adj_ded_h: 'Other Deductions', adj_add_h: 'Other Additions', adj_ded_add: 'Add deduction', adj_add_add: 'Add addition',
+  adj_ded_hint: 'Days marked Absent already earn no base pay, so do not enter them here again.',
+  adj_add_hint: 'These are added to the estimated net salary.',
+  adj_ded_empty: 'No deductions entered for this month.', adj_add_empty: 'No additions entered for this month.',
+  adj_ded_total: 'Total other deductions', adj_add_total: 'Total other additions', adj_edit_h: 'Edit: {name}',
+  a_err_name: 'Enter a name.', a_err_amount: 'Enter an amount.', a_err_positive: 'The amount must be greater than 0.', a_err_big: 'The amount is too large.', a_err_date: 'Choose a valid date.',
+  exp_h: 'Expenses', exp_add_h: 'Add Expense', exp_edit_h: 'Edit expense', exp_back: 'Back', exp_category: 'Category', exp_add_category: '+ Add new category\u2026', exp_custom_label: 'New category name',
+  exp_err_category: 'Choose a category.', exp_err_custom: 'Enter a name for the new category.', exp_err_custom_big: 'Use 40 characters or fewer.',
+  exp_th_note: 'Note', exp_list_h: 'Expense Records', exp_filter_all: 'All categories', exp_filter_from: 'From', exp_filter_to: 'To', exp_filter_clear: 'Clear filters',
+  exp_filtered_line: 'Showing {n}, total {amt}.', exp_empty: 'No expenses recorded for this month yet.', exp_empty_filtered: 'No expenses match this filter.',
+  exp_total: 'Total expenses this month', exp_count: 'Number of records', exp_by_cat_h: 'By category', exp_vs_salary_h: 'Salary vs Expenses',
+  exp_need_actual: 'Enter the amount you received to see what remains after expenses.', exp_salary_received: 'Salary received', exp_total_label: 'Total expenses', exp_remaining: 'Remaining',
+  cat_food: 'Food', cat_drinks: 'Drinks', cat_transport: 'Transportation', cat_bills: 'Bills', cat_phone: 'Phone', cat_internet: 'Internet',
+  cat_shopping: 'Shopping', cat_medicine: 'Medicine', cat_household: 'Household', cat_entertainment: 'Entertainment', cat_other: 'Other',
+
+  act_h: 'Actual Salary Received', act_ph: 'Enter when your salary is paid', act_clear: 'Clear amount',
+  act_err_num: 'Enter the amount as a number.', act_err_neg: 'The amount cannot be negative.',
+  act_prompt: 'Enter the amount you received to compare it with the expected net salary of {amt}.',
+  act_expected: 'Expected net salary (estimated)', act_actual: 'Actual salary received',
+  act_match: 'The amount you received matches the calculated amount.',
+  act_less: 'You received approximately {amt} less than the calculated amount.',
+  act_more: 'You received approximately {amt} more than the calculated amount.',
+  act_possible: 'Possible explanation, based on the information entered',
+  act_counted: 'Counted in the explained difference', act_not_counted: 'Shown, but not counted',
+  act_possible_hint: 'These are possibilities only. They are worked out from your entries and are not confirmed reasons. An item is not counted when it would go beyond the difference or overlap with another item.',
+  act_nothing: 'Nothing in the information entered can explain this difference.',
+  act_unexpl_zero: 'Estimated unexplained difference: {amt}.', act_unexpl: 'Unexplained difference: {amt}.',
+  r_ot: 'Overtime earnings may not have been paid', r_missing: 'Working days without a record may not have been paid ({n})',
+  r_add: 'Other additions may not have been paid', r_grace: 'The grace period may not have been applied to late arrivals',
+  r_late: 'Late deductions may not have been applied', r_ded: 'Other deductions may not have been applied',
+  notes_label: 'Notes for this month (optional)',
+
+  rec_h: 'Salary Reconciliation', rc_expected_h: 'Expected salary', rc_base: 'Base salary earned (recorded days)',
+  rc_remaining: 'Working days without a record or still to come ({n}, projected)', rc_gross: 'Expected gross salary',
+  rc_less_late: 'Less: late deductions', rc_less_other: 'Less: other deductions', rc_plus_ot: 'Plus: overtime', rc_plus_add: 'Plus: other additions',
+  rc_net: 'Expected net salary', rc_compare_h: 'Expected compared with actual', rc_enter: 'Enter the actual salary received above to complete the comparison.',
+  rc_expected: 'Expected', rc_actual: 'Actual', rc_explained: 'Explained difference', rc_unexplained: 'Unexplained difference',
+  rc_hint: 'Explained difference counts only the possible reasons listed under Actual Salary Received. It is an estimate based on the information entered.',
+
+  calc_h: 'Detailed Calculation', calc_line: 'Estimated net so far: {amt}',
+  bd_from_settings: 'From Salary Settings', bd_workdays: 'Working days per month', bd_daily: 'Daily rate', bd_hours: 'Working hours per day', bd_hourly: 'Hourly rate',
+  bd_days_worked_how: 'Days with check-in recorded', bd_paid_days: 'Paid days', bd_paid_how: 'Worked days', bd_paid_hol: ' + paid holidays', bd_paid_leave: ' + paid leave',
+  bd_limited: ', limited to the monthly salary', bd_late: 'Late deductions', bd_late_how: '{days}, {mins} counted min, {method}', bd_overtime: 'Overtime',
+  bd_net_so_far: 'Estimated net earned so far', bd_net_how: 'Base \u2212 late \u2212 other deductions + overtime + other additions',
+  bd_remaining: 'Days without a record or still to come', bd_assume: '(assumes full attendance)', bd_expected_how: 'Earned so far + days without a record or still to come',
+  m_per_minute: 'per minute, prorated: late minutes x (hourly rate / 60) x {rate}', m_fixed: 'fixed {amt} for each late minute',
+  m_hour: 'per started hour: hours rounded up x hourly rate x {rate}', m_daily: '{rate} of the daily salary for each late day', m_custom: 'custom tiers ({n})',
+  rules_h: 'Rules used',
+  rule_grace: 'Grace period: {g} min.', rule_grace_full: 'Once it is passed, all late minutes count.', rule_grace_excess: 'Only minutes beyond it count.',
+  rule_ot_end: 'Overtime: time worked after the official end time ({end}), at {mult}x', rule_ot_hours: 'Overtime: time worked beyond {h} standard hours, at {mult}x', rule_ot_from: ', from {m} min.',
+  rule_weekend_work: 'Weekend days: {list}, counted as working days.', rule_weekend_ot: 'Weekend days: {list}, not working days; attendance on them is paid as overtime.', rule_weekend_none: 'Weekend days: none set.',
+  rule_hol_paid: 'Holidays are paid.', rule_hol_unpaid: 'Holidays are unpaid.', rule_leave_paid: 'Leave is paid.', rule_leave_unpaid: 'Leave is unpaid.',
+  rule_caps: 'A late deduction never exceeds that day\u2019s base pay, and base salary never exceeds the monthly salary.',
+  rule_precision: 'Values are calculated at full precision and rounded for display, so a total can differ from the sum of the displayed rows by 0.01.',
+  calc_foot: 'All results are estimates. They are only as accurate as the payroll rules entered in Salary Settings.',
+
+  data_h: 'Data Export / Import',
+  data_hint: 'Your data is saved automatically on this device only. Export a backup file regularly, and use Import to restore it on this or another device.',
+  ds_saved: 'Saved automatically on this device.', ds_last: 'Last backup file: {d}', ds_never: 'never', ds_persist: 'Protected from automatic clean-up by the browser: {v}',
+  ds_yes: 'yes', ds_no: 'no', ds_unknown: 'unknown',
+  btn_export: 'Export data', btn_import: 'Import data', bk_summary: 'Copy or paste backup as text', bk_label: 'Backup text (JSON)', bk_copy: 'Copy backup text', bk_import: 'Import from text',
+  sm_h: 'Saved months on this device', sm_empty: 'No saved months yet.', sm_line: '{recs}, estimated net {net}', sm_recv: ', received {amt}', sm_current: 'Open now', sm_open: 'Open',
+  clear_h: 'Clear data', btn_clear_month: 'Clear this month', btn_reset: 'Reset all data', b_press_clear: 'Press again to clear', b_press_reset: 'Press again to reset',
+  clear_hint: 'Clear this month removes its attendance, deductions, additions, actual salary and notes. Settings are kept. Each button asks you to press it a second time to confirm.',
+  dm_saved: 'Backup saved as {name}.', dm_cancelled: 'Export cancelled.',
+  dm_created: 'Backup file {name} was created. If nothing downloaded, copy the backup text below instead.',
+  dm_nofile: 'A file could not be created here. Copy the backup text below instead.',
+  dm_copied: 'Backup text copied.', dm_manual: 'Select the text and copy it manually.',
+  dm_invalid: 'That is not a valid backup. Choose a JSON file exported from this calculator.',
+  im_text: 'This backup has {months} and {recs}.', im_fixes: '{items} will be skipped or reset to defaults.', im_replace: 'Importing replaces all data currently on this device.', im_go: 'Replace my data',
+  dm_imported: 'Data imported.', dm_paste_first: 'Paste the backup text first.', dm_unreadable: 'The file could not be read.',
+  dm_cleared: 'Cleared {month}.', dm_reset: 'All data was reset to the defaults.'
+},
+
+ar: {
+  months: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'],
+  days_short: ['أحد', 'اتنين', 'تلات', 'أربع', 'خميس', 'جمعة', 'سبت'],
+  days_full: ['الأحد', 'الاتنين', 'التلات', 'الأربع', 'الخميس', 'الجمعة', 'السبت'],
+  adj_ded_names: ['تأمينات', 'ضرائب', 'قسط سلفة', 'خصم غياب', 'جزاء', 'أخرى'],
+  adj_add_names: ['مكافأة', 'حافز', 'بدل', 'عمولة', 'أخرى'],
+  pl_workday: { one: 'يوم شغل واحد', two: 'يومين شغل', few: '{n} أيام شغل', many: '{n} يوم شغل' },
+  pl_recday: { one: 'يوم واحد مسجل', two: 'يومين مسجلين', few: '{n} أيام مسجلة', many: '{n} يوم مسجل' },
+  pl_rec: { one: 'سجل واحد', two: 'سجلين', few: '{n} سجلات', many: '{n} سجل' },
+  pl_attrec: { one: 'سجل حضور واحد', two: 'سجلين حضور', few: '{n} سجلات حضور', many: '{n} سجل حضور' },
+  pl_month: { one: 'شهر واحد', two: 'شهرين', few: '{n} شهور', many: '{n} شهر' },
+  pl_entry: { one: 'بند واحد', two: 'بندين', few: '{n} بنود', many: '{n} بند' },
+  pl_item: { one: 'بند واحد مش سليم', two: 'بندين مش سليمين', few: '{n} بنود مش سليمة', many: '{n} بند مش سليم' },
+  pl_lateday: { one: 'يوم تأخير واحد', two: 'يومين تأخير', few: '{n} أيام تأخير', many: '{n} يوم تأخير' },
+  pl_expense: { one: 'مصروف واحد', two: 'مصروفين', few: '{n} مصروفات', many: '{n} مصروف' },
+
+  app_title: 'حاسبة المرتب والحضور',
+  app_sub: 'كل الأرقام تقريبية وعلى حسب القواعد والسجلات اللي بتدخلها. أي تعديل بيتحفظ لوحده على الموبايل ده.',
+  nav_aria: 'روح لقسم',
+  nav_month: 'الشهر', nav_summary: 'الملخص', nav_settings: 'الإعدادات', nav_add: 'تسجيل حضور', nav_records: 'السجلات',
+  nav_deductions: 'الخصومات', nav_additions: 'الإضافات', nav_actual: 'المرتب الفعلي', nav_expenses: 'المصروفات', nav_recon: 'المطابقة', nav_calc: 'الحسابات', nav_data: 'البيانات',
+  show: 'إظهار', hide: 'إخفاء', list_sep: '، ',
+  op_mul: '×', op_div: '÷',
+  u_h: 'س', u_m: 'د', u_hours: 'ساعة',
+
+  install_text: 'ثبّت الحاسبة دي على موبايلك عشان تستخدمها زي أي تطبيق، حتى من غير نت.',
+  install_btn: 'ثبّت التطبيق', install_no: 'مش دلوقتي',
+  demo_text: 'دي بيانات تجريبية لشهر سبتمبر 2026. امسحها وابدأ بإعداداتك وحضورك إنت.',
+  demo_clear: 'امسح البيانات التجريبية', demo_keep: 'سيبها دلوقتي',
+  storage_warn: 'تخزين المتصفح مش شغال، فالتعديلات هتضيع لما تقفل الصفحة أو تعمل تحديث. استخدم «تصدير البيانات» من قسم البيانات عشان تحتفظ بنسخة احتياطية.',
+  dn_recovered: 'مقدرناش نقرا البيانات المحفوظة، فرجّعنا آخر نسخة احتياطية كانت متخزنة على الموبايل ده. يفضل تصدّر ملف نسخة احتياطية دلوقتي.',
+  dn_unreadable: 'مقدرناش نقرا البيانات المحفوظة ومالقيناش نسخة احتياطية. النسخة اللي مش مقروءة اتحفظت لوحدها على الموبايل ده ومتمسحتش.',
+
+  month_current: 'الشهر الحالي', month_label: 'الشهر', year_label: 'السنة',
+  month_prev: 'السابق', month_next: 'التالي', month_this: 'الشهر ده',
+  m_err_range: 'السنين المدعومة من 2000 لحد 2100.', m_err_year: 'اكتب سنة من 2000 لحد 2100.',
+  emp_name: 'اسم الموظف (اختياري)', emp_line: 'الموظف: {name}',
+
+  sum_h: 'الملخص', sum_details: 'تفاصيل الشهر',
+  sum_earned: 'صافي المرتب التقريبي اللي استحقيته لحد دلوقتي',
+  sum_from: 'تقدير من {n}، لحد {date}.',
+  sum_none: 'لسه ما سجلتش حضور للشهر ده.',
+  sum_expected: 'المتوقع في آخر الشهر',
+  sum_exp_incl: 'تقريبي. محسوب على إن أيام الشغل اللي مالهاش سجل أو لسه جاية ({n}) هتتحسب بالمرتب كامل، من غير تأخير أو أوفر تايم.',
+  sum_exp_none: 'تقريبي على حسب الأيام المسجلة بس. مفيش أيام شغل تانية متضافة.',
+  sum_actual: 'المرتب اللي استلمته فعلاً', sum_not_entered: 'لسه ما اتكتبش',
+  sum_enter_link: 'اكتب المبلغ اللي استلمته', sum_enter_rest: 'عشان تعرف ليه مختلف عن المرتب المتوقع.',
+  sum_vs: 'المرتب الفعلي مقابل المتوقع', sum_received: 'استلمت {amt}.',
+  b_under: 'أقل من المتوقع', b_over: 'أكتر من المتوقع', b_match: 'مطابق للمتوقع',
+  sum_unrec_one: 'فيه {n} لحد النهارده مالوش سجل. مش محسوب في الصافي لحد دلوقتي، بس محسوب في المتوقع آخر الشهر. سجّل الحضور، أو اختار لليوم ده حالة يوم راحة أو إجازة رسمية أو غياب أو إجازة.',
+  sum_unrec_many: 'فيه {n} لحد النهارده مالهمش سجل. مش محسوبين في الصافي لحد دلوقتي، بس محسوبين في المتوقع آخر الشهر. سجّل الحضور، أو اختار للأيام دي حالة يوم راحة أو إجازة رسمية أو غياب أو إجازة.',
+  l_days_worked: 'أيام الحضور', l_days_late: 'أيام التأخير', l_overtime: 'الأوفر تايم', l_days_absent: 'أيام الغياب',
+  l_monthly: 'المرتب الشهري', l_late_min: 'إجمالي دقايق التأخير', l_ot_hours: 'إجمالي ساعات الأوفر تايم',
+  l_hol_leave: 'أيام الإجازات', l_unpaid: '(من غير مرتب)',
+  l_base: 'المرتب الأساسي المستحق', l_late_ded: 'إجمالي خصم التأخير', l_ot_earn: 'إجمالي فلوس الأوفر تايم',
+  l_other_ded: 'خصومات تانية', l_other_add: 'إضافات تانية', l_net_so_far: 'صافي المرتب التقريبي لحد دلوقتي',
+  l_difference: 'الفرق',
+
+  set_h: 'إعدادات المرتب',
+  set_line: '{sal} في الشهر، {days} يوم شغل، {hrs} ساعة في اليوم، من {start} لـ {end}.',
+  set_hint: 'اكتب قواعد الشركة اللي بتشتغل فيها. الإعدادات بتتحفظ لكل شهر لوحده، وأي شهر جديد بيبدأ بنسخة من الشهر اللي قبله.',
+  set_pay: 'المرتب', set_salary: 'المرتب الشهري', set_currency: 'العملة', set_workdays: 'أيام الشغل في الشهر', set_hours: 'ساعات الشغل العادية في اليوم',
+  set_schedule: 'مواعيد الشغل', set_start: 'ميعاد بداية الشغل الرسمي', set_end: 'ميعاد نهاية الشغل الرسمي',
+  set_grace: 'فترة السماح للتأخير (بالدقايق)', set_grace_mode: 'لما فترة السماح تعدّي',
+  set_grace_excess: 'احسب الدقايق اللي بعدها بس', set_grace_full: 'احسب كل دقايق التأخير',
+  set_overnight: 'اسمح بالانصراف بعد نص الليل (ورديات الليل)',
+  set_late_h: 'خصم التأخير', set_late_method: 'الطريقة اللي الشركة بتحسب بيها التأخير',
+  lm_per_minute: 'بالدقيقة، على حسب سعر الساعة', lm_per_minute_fixed: 'بالدقيقة، مبلغ ثابت',
+  lm_per_hour: 'بالساعة، أي ساعة بتبدأ بتتحسب كاملة', lm_daily: 'جزء من اليومية عن كل يوم تأخير', lm_custom: 'قاعدة مخصصة (شرائح)',
+  rate_mult: 'معدل خصم التأخير (معامل)', rate_hint_minute: 'واحد صحيح يخصم بالظبط اللي يقابل الدقايق اللي ضاعت. اتنين يخصم الضعف.',
+  rate_fixed: 'المبلغ عن كل دقيقة تأخير ({cur})', rate_hint_fixed: 'المبلغ ده بيتخصم عن كل دقيقة تأخير محسوبة.',
+  rate_hint_hour: 'وقت التأخير بيتقرّب لأعلى لساعات كاملة. واحد صحيح يخصم سعر الساعة عن كل ساعة بتبدأ.',
+  rate_daily: 'جزء من اليومية عن كل يوم تأخير', rate_hint_daily: 'ربع (0.25) يخصم ربع اليومية عن كل يوم بتتأخر فيه.',
+  tier_unit: 'الخصم في كل شريحة بـ', tier_unit_days: 'أيام من المرتب (جزء من اليومية)', tier_unit_amount: 'مبلغ ثابت',
+  tier_hint: 'بيتطبق أعلى شريحة توصلها دقايق التأخير المحسوبة. الدقايق بتتحسب بعد قاعدة فترة السماح.',
+  tier_from: 'دقايق التأخير من', tier_deduct: 'الخصم ({unit})', tier_days_word: 'أيام من المرتب',
+  tier_none: 'لسه مفيش شرائح، يعني مفيش خصم تأخير. ضيف شريحة.', tier_add: 'إضافة شريحة', b_remove: 'مسح',
+  tier_err_from: 'دقايق التأخير لازم تكون رقم صحيح من 0 لـ 1440.', tier_err_value: 'الخصم لازم يكون رقم 0 أو أكتر.', tier_max: 'ينفع تضيف لحد 20 شريحة.',
+  set_ot_h: 'الأوفر تايم', set_ot_basis: 'الأوفر تايم بيتحسب من', set_ot_after_end: 'الوقت اللي بتشتغله بعد ميعاد نهاية الشغل', set_ot_beyond: 'الساعات اللي بتزيد عن ساعات الشغل العادية',
+  set_ot_mult: 'معامل سعر الأوفر تايم', set_ot_min: 'أقل أوفر تايم يتحسب (بالدقايق)',
+  set_days_h: 'الإجازة الأسبوعية والإجازات', set_weekend: 'أيام الإجازة الأسبوعية (اختياري)',
+  set_weekend_hint: 'أيام الإجازة الأسبوعية مش بتتحسب من أيام الشغل اللي لسه محتاجة تسجيل.',
+  set_weekend_working: 'أيام الإجازة الأسبوعية بتتحسب أيام شغل (الحضور فيها بيتدفع زي أي يوم)',
+  set_weekend_working_hint: 'لو ده مقفول، الحضور في يوم الإجازة الأسبوعية بيتدفع كأوفر تايم بس.',
+  set_hol_paid: 'الإجازات الرسمية بمرتب (اليوم بياخد اليومية)', set_leave_paid: 'الإجازات بمرتب (اليوم بياخد اليومية)',
+  v_restored: 'رجّعنا القيمة اللي كانت قبل كده.',
+  v_salary_num: 'اكتب المرتب الشهري كرقم.', v_salary_neg: 'المرتب مينفعش يبقى بالسالب.', v_salary_big: 'المرتب كبير أوي.',
+  v_cur_empty: 'اكتب رمز العملة، مثلاً EGP.', v_cur_long: 'استخدم 8 حروف أو أقل.',
+  v_days: 'اكتب رقم صحيح من 1 لـ 31.', v_hours: 'اكتب عدد ساعات أكبر من 0 ولحد 24.', v_time: 'اكتب ميعاد صحيح.',
+  v_same: 'ميعاد البداية والنهاية مينفعش يبقوا نفس الوقت.',
+  v_end_before: 'ميعاد النهاية لازم يكون بعد البداية. لو الوردية بتخلص بعد نص الليل شغّل «ورديات الليل».',
+  v_overnight_off: 'ميعاد النهاية مش بعد ميعاد البداية. غيّر المواعيد الأول قبل ما تقفل ده.',
+  v_grace: 'اكتب دقايق من 0 لـ 480.', v_invalid: 'قيمة مش صحيحة.', v_rate: 'اكتب رقم 0 أو أكتر.',
+  v_rate_daily: 'اكتب جزء من 0 لـ 1 (0.25 يعني ربع اليومية).', v_big: 'القيمة كبيرة أوي.', v_mult: 'اكتب معامل من 0 لـ 10.',
+
+  att_add_h: 'تسجيل حضور', att_edit_h: 'تعديل حضور: {date}',
+  f_date: 'التاريخ', f_in: 'وقت الحضور', f_out: 'وقت الانصراف', f_status: 'الحالة', f_note: 'ملاحظة (اختياري)', f_name: 'الاسم', f_amount: 'المبلغ ({cur})',
+  btn_add: 'إضافة', btn_save: 'حفظ التعديلات', btn_official: 'استخدم المواعيد الرسمية', btn_cancel_edit: 'إلغاء التعديل', b_cancel: 'إلغاء',
+  st_auto: 'تلقائي', st_present: 'حاضر', st_late: 'متأخر', st_overtime: 'أوفر تايم', st_late_overtime: 'متأخر + أوفر تايم',
+  st_absent: 'غايب', st_dayoff: 'يوم راحة', st_holiday: 'إجازة رسمية', st_leave: 'إجازة',
+  sh_auto: 'الحالة بتتحدد لوحدها من الأوقات اللي بتكتبها: حاضر أو متأخر أو أوفر تايم أو متأخر + أوفر تايم.',
+  sh_present: 'بيتحسب يوم شغل عادي. التأخير والأوفر تايم مش بيتحسبوا. كتابة الأوقات اختيارية.',
+  sh_late: 'بيتحسب يوم شغل. خصم التأخير بيتطبق والأوفر تايم مش بيتحسب.',
+  sh_overtime: 'بيتحسب يوم شغل. الأوفر تايم بيتحسب وخصم التأخير مش بيتطبق.',
+  sh_late_overtime: 'بيتحسب يوم شغل. خصم التأخير والأوفر تايم الاتنين بيتطبقوا.',
+  sh_absent: 'مفيش مرتب عن اليوم ده. مش لازم تكتب أوقات.',
+  sh_dayoff: 'مفيش مرتب ومفيش خصم. مش بيتحسب غياب.',
+  sh_holiday: 'بمرتب أو من غير على حسب إعدادات المرتب. عمره ما بيعمل خصم.',
+  sh_leave: 'بمرتب أو من غير على حسب إعدادات المرتب. عمره ما بيعمل خصم.',
+  pv_prefix: 'معاينة: {parts}.', pv_late: 'تأخير {d} محسوب ({amt})', pv_no_late: 'مفيش خصم تأخير', pv_ot: 'أوفر تايم {d} ({amt})',
+  pv_no_ot: 'مفيش أوفر تايم', pv_no_out: 'لسه ما سجلتش انصراف', pv_net: 'صافي اليوم {amt}',
+  att_added: 'اتضاف {date}.', att_saved: 'اتحفظ {date}.',
+  w_no_checkout: 'ما فيش وقت انصراف، فالساعات والأوفر تايم مش محسوبين.',
+  e_date_required: 'لازم تختار تاريخ.', e_date_invalid: 'التاريخ مش صحيح.',
+  e_date_month: 'التاريخ لازم يكون في {month}. لو هتضيف شهور تانية غيّر الشهر من فوق.',
+  e_dup: 'فيه سجل لـ {date} موجود قبل كده. استخدم «تعديل» من الجدول عشان تغيّره.',
+  e_ci_bad: 'وقت الحضور مش صحيح.', e_co_bad: 'وقت الانصراف مش صحيح.', e_ci_req: 'لازم تكتب وقت الحضور.',
+  e_ci_before_co: 'لازم تكتب وقت الحضور قبل وقت الانصراف.', e_co_same: 'وقت الانصراف لازم يختلف عن وقت الحضور.',
+  e_co_earlier: 'وقت الانصراف مينفعش يكون قبل وقت الحضور. لو الوردية بتخلص بعد نص الليل شغّل «ورديات الليل» من إعدادات المرتب.',
+
+  att_h: 'سجلات الحضور', att_scroll: 'اسحب الجدول يمين وشمال عشان تشوف كل الأعمدة وأزرار التعديل والمسح.',
+  att_aria: 'سجلات الحضور، الجدول بيتسحب يمين وشمال على الشاشات الصغيرة', att_caption: 'سجلات الحضور، المبالغ بالـ{cur}',
+  att_empty: 'مفيش سجلات حضور لشهر {month}. استخدم النموذج اللي فوق وسجّل أول يوم.',
+  att_invalid: 'مش سليم: {err}', att_weekend_work: 'شغل في الإجازة', att_raw: 'قبل السماح {d}', att_in_grace: '{d} في فترة السماح',
+  att_alert_one: 'مش قادرين نحسب {n} بالإعدادات الحالية، فبيتساب برّه كل الإجماليات: ',
+  att_alert_many: 'مش قادرين نحسب {n} بالإعدادات الحالية، فبيتساب برّه كل الإجماليات: ',
+  att_capped: 'الأيام المدفوعة أكتر من أيام الشغل في الإعدادات، فالمرتب الأساسي متحدد بالمرتب الشهري. عمود الصافي بيوريك كل يوم لوحده.',
+  th_date: 'التاريخ', th_day: 'اليوم', th_in: 'الحضور', th_out: 'الانصراف', th_status: 'الحالة', th_hours: 'الساعات', th_late: 'التأخير', th_ot: 'الأوفر تايم',
+  th_ded: 'الخصم', th_otpay: 'فلوس الأوفر', th_net: 'الصافي', th_actions: 'إجراءات', th_total: 'الإجمالي', th_amount: 'المبلغ',
+  b_details: 'التفاصيل', b_edit: 'تعديل', b_delete: 'مسح', b_confirm: 'تأكيد', b_close: 'إغلاق',
+
+  dl_title: 'حساب يوم {date}',
+  dl_status_auto: 'الحالة: {label} (اتحددت من الأوقات).', dl_status_manual: 'الحالة: {label} (متحددة يدوي).',
+  dl_absent: 'غياب: مفيش مرتب أساسي عن اليوم ده. ومفيش أي خصم تاني.',
+  dl_dayoff: 'يوم راحة: مفيش مرتب ومفيش خصم. مش بيتحسب غياب.',
+  dl_paid_holiday: 'إجازة رسمية بمرتب: المرتب الأساسي هو اليومية {rate}. مفيش خصم.', dl_paid_leave: 'إجازة بمرتب: المرتب الأساسي هو اليومية {rate}. مفيش خصم.',
+  dl_unpaid_holiday: 'إجازة رسمية من غير مرتب (على حسب إعدادات المرتب): مفيش مرتب أساسي. مفيش خصم.', dl_unpaid_leave: 'إجازة من غير مرتب (على حسب إعدادات المرتب): مفيش مرتب أساسي. مفيش خصم.',
+  dl_weekend: 'ده يوم إجازة أسبوعية، وأيام الإجازة الأسبوعية مش بتتحسب أيام شغل. مفيش مرتب أساسي ولا خصم تأخير، وكل الوقت اللي اشتغلته بيتدفع كأوفر تايم.',
+  dl_base: 'المرتب الأساسي: اليومية {rate} ({sal} ÷ {days} يوم شغل).',
+  dl_nolate: 'وقت الحضور {ci} في الميعاد أو قبل ميعاد البداية الرسمي ({start}). مفيش تأخير.',
+  dl_late_base: 'وقت الحضور {ci} بعد ميعاد البداية الرسمي ({start}) بـ {raw} دقيقة.',
+  dl_grace_within: 'ده جوه فترة السماح ({g} دقيقة)، فمفيش دقايق متحسبة.',
+  dl_grace_full: 'ده أكتر من فترة السماح ({g} دقيقة)، فكل الـ {raw} دقيقة بتتحسب.',
+  dl_grace_excess: 'بعد ما نشيل فترة السماح ({g} دقيقة)، بيتحسب {c} دقيقة.',
+  dl_late_ded: 'خصم التأخير: {formula}. بعد التقريب: {amt}.',
+  dl_late_ignored: 'الحالة متحددة على {label}، فالتأخير مش بيتحسب.',
+  f_per_minute: '{mins} دقيقة × ({hourly} سعر الساعة ÷ 60) × {rate}', f_fixed: '{mins} دقيقة × {amt} للدقيقة',
+  f_hour: '{h} ساعة بدأت × {hourly} سعر الساعة × {rate}', f_daily: '{daily} اليومية × {rate}',
+  f_custom: 'الشريحة المخصصة لـ {mins} دقيقة تأخير', f_cap: '، متحدد باليومية {daily}',
+  dl_ot_weekend: 'أوفر تايم: {worked} اشتغلتها في يوم إجازة أسبوعية.',
+  dl_ot_hours: 'أوفر تايم: {worked} شغل يعني {ot} زيادة عن ساعات الشغل العادية ({h} ساعة).',
+  dl_ot_end: 'أوفر تايم: وقت الانصراف {co} بعد ميعاد النهاية الرسمي ({end}) بـ {ot}.',
+  dl_ot_pay: 'فلوس الأوفر تايم: {h} ساعة × {hourly} سعر الساعة × {mult} = {amt}.',
+  dl_ot_ignored: 'الحالة متحددة على {label}، فالأوفر تايم مش بيتحسب.',
+  dl_no_ot_weekend: 'مفيش أوفر تايم: مفيش وقت شغل متسجل.',
+  dl_no_ot_std: 'مفيش أوفر تايم: وقت الشغل مبيزيدش عن ساعات الشغل العادية.',
+  dl_no_ot_end: 'مفيش أوفر تايم: وقت الشغل مبيزيدش عن ميعاد النهاية الرسمي.',
+  dl_no_ot_std_min: 'مفيش أوفر تايم: وقت الشغل مبيزيدش عن ساعات الشغل العادية بـ {m} دقيقة على الأقل.',
+  dl_no_ot_end_min: 'مفيش أوفر تايم: وقت الشغل مبيزيدش عن ميعاد النهاية الرسمي بـ {m} دقيقة على الأقل.',
+  dl_no_checkout: 'وقت الانصراف فاضي، فالساعات والأوفر تايم مش محسوبين.',
+  dl_net: 'صافي اليوم: {base} أساسي − {late} تأخير + {ot} أوفر تايم = {net}.',
+  dl_note: 'ملاحظة: {note}',
+
+  adj_ded_h: 'الخصومات التانية', adj_add_h: 'الإضافات التانية', adj_ded_add: 'إضافة خصم', adj_add_add: 'إضافة مبلغ',
+  adj_ded_hint: 'الأيام المسجلة غياب مش بتاخد مرتب أساسي أصلاً، فماتكتبهاش هنا تاني.',
+  adj_add_hint: 'المبالغ دي بتتضاف على صافي المرتب التقريبي.',
+  adj_ded_empty: 'مفيش خصومات متسجلة للشهر ده.', adj_add_empty: 'مفيش إضافات متسجلة للشهر ده.',
+  adj_ded_total: 'إجمالي الخصومات التانية', adj_add_total: 'إجمالي الإضافات التانية', adj_edit_h: 'تعديل: {name}',
+  a_err_name: 'لازم تكتب اسم.', a_err_amount: 'لازم تكتب مبلغ.', a_err_positive: 'المبلغ لازم يكون أكبر من 0.', a_err_big: 'المبلغ كبير أوي.', a_err_date: 'لازم تختار تاريخ صحيح.',
+  exp_h: 'المصروفات', exp_add_h: 'إضافة مصروف', exp_edit_h: 'تعديل المصروف', exp_back: 'رجوع', exp_category: 'التصنيف', exp_add_category: '+ ضيف تصنيف جديد\u2026', exp_custom_label: 'اسم التصنيف الجديد',
+  exp_err_category: 'اختار تصنيف.', exp_err_custom: 'اكتب اسم التصنيف الجديد.', exp_err_custom_big: 'استخدم 40 حرف أو أقل.',
+  exp_th_note: 'ملاحظة', exp_list_h: 'سجلات المصروفات', exp_filter_all: 'كل التصنيفات', exp_filter_from: 'من', exp_filter_to: 'لحد', exp_filter_clear: 'امسح الفلاتر',
+  exp_filtered_line: 'العدد {n}، الإجمالي {amt}.', exp_empty: 'لسه ما سجلتش مصروفات للشهر ده.', exp_empty_filtered: 'مفيش مصروفات مطابقة للفلتر ده.',
+  exp_total: 'إجمالي المصروفات الشهر ده', exp_count: 'عدد السجلات', exp_by_cat_h: 'حسب التصنيف', exp_vs_salary_h: 'المرتب مقابل المصروفات',
+  exp_need_actual: 'اكتب المبلغ اللي استلمته عشان تعرف المتبقي بعد المصروفات.', exp_salary_received: 'المرتب المستلم', exp_total_label: 'إجمالي المصروفات', exp_remaining: 'المتبقي',
+  cat_food: 'أكل', cat_drinks: 'شرب', cat_transport: 'مواصلات', cat_bills: 'فواتير', cat_phone: 'موبايل', cat_internet: 'إنترنت',
+  cat_shopping: 'مشتريات', cat_medicine: 'أدوية', cat_household: 'منزل', cat_entertainment: 'ترفيه', cat_other: 'أخرى',
+
+  act_h: 'المرتب اللي استلمته فعلاً', act_ph: 'اكتبه لما المرتب ينزل', act_clear: 'مسح المبلغ',
+  act_err_num: 'اكتب المبلغ كرقم.', act_err_neg: 'المبلغ مينفعش يبقى بالسالب.',
+  act_prompt: 'اكتب المبلغ اللي استلمته عشان نقارنه بصافي المرتب المتوقع وهو {amt}.',
+  act_expected: 'صافي المرتب المتوقع (تقريبي)', act_actual: 'المرتب اللي استلمته فعلاً',
+  act_match: 'المبلغ اللي استلمته مطابق للمبلغ المحسوب.',
+  act_less: 'استلمت تقريباً {amt} أقل من المبلغ اللي اتحسب.',
+  act_more: 'استلمت تقريباً {amt} أكتر من المبلغ اللي اتحسب.',
+  act_possible: 'تفسيرات محتملة، على حسب اللي دخّلته',
+  act_counted: 'محسوب ضمن الفرق اللي ليه تفسير', act_not_counted: 'ظاهر بس مش محسوب',
+  act_possible_hint: 'دي احتمالات بس. اتحسبت من اللي كتبته وهي مش أسباب مؤكدة. البند مش بيتحسب لو هيزيد عن الفرق أو بيتكرر مع بند تاني.',
+  act_nothing: 'مفيش حاجة في اللي كتبته تفسر الفرق ده.',
+  act_unexpl_zero: 'الفرق اللي مش معروف سببه (تقريبي): {amt}.', act_unexpl: 'فرق مش معروف سببه: {amt}.',
+  r_ot: 'ممكن فلوس الأوفر تايم ما اتدفعتش', r_missing: 'ممكن أيام الشغل اللي مالهاش سجل ما اتدفعتش ({n})',
+  r_add: 'ممكن الإضافات التانية ما اتدفعتش', r_grace: 'ممكن فترة السماح ما اتطبقتش على التأخير',
+  r_late: 'ممكن خصم التأخير ما اتطبقش', r_ded: 'ممكن الخصومات التانية ما اتطبقتش',
+  notes_label: 'ملاحظات على الشهر ده (اختياري)',
+
+  rec_h: 'مطابقة المرتب', rc_expected_h: 'المرتب المتوقع', rc_base: 'المرتب الأساسي (الأيام المسجلة)',
+  rc_remaining: 'أيام شغل مالهاش سجل أو لسه جاية ({n}، متوقعة)', rc_gross: 'إجمالي المرتب المتوقع',
+  rc_less_late: 'ناقص: خصم التأخير', rc_less_other: 'ناقص: خصومات تانية', rc_plus_ot: 'زائد: أوفر تايم', rc_plus_add: 'زائد: إضافات تانية',
+  rc_net: 'صافي المرتب المتوقع', rc_compare_h: 'المتوقع مقابل الفعلي', rc_enter: 'اكتب المرتب اللي استلمته فوق عشان المقارنة تكمل.',
+  rc_expected: 'المتوقع', rc_actual: 'الفعلي', rc_explained: 'الفرق اللي ليه تفسير', rc_unexplained: 'الفرق اللي مش معروف سببه',
+  rc_hint: 'الفرق اللي ليه تفسير بيحسب الأسباب المحتملة المكتوبة فوق في «المرتب اللي استلمته فعلاً» بس. وده تقدير على حسب اللي كتبته.',
+
+  calc_h: 'الحسابات بالتفصيل', calc_line: 'الصافي التقريبي لحد دلوقتي: {amt}',
+  bd_from_settings: 'من إعدادات المرتب', bd_workdays: 'أيام الشغل في الشهر', bd_daily: 'اليومية', bd_hours: 'ساعات الشغل في اليوم', bd_hourly: 'سعر الساعة',
+  bd_days_worked_how: 'الأيام اللي متسجل فيها حضور', bd_paid_days: 'الأيام المدفوعة', bd_paid_how: 'أيام الحضور', bd_paid_hol: ' + الإجازات الرسمية بمرتب', bd_paid_leave: ' + الإجازات بمرتب',
+  bd_limited: '، متحدد بالمرتب الشهري', bd_late: 'خصم التأخير', bd_late_how: '{days}، {mins} دقيقة محسوبة، {method}', bd_overtime: 'الأوفر تايم',
+  bd_net_so_far: 'الصافي التقريبي لحد دلوقتي', bd_net_how: 'الأساسي − التأخير − الخصومات التانية + الأوفر تايم + الإضافات التانية',
+  bd_remaining: 'أيام مالهاش سجل أو لسه جاية', bd_assume: '(على افتراض حضور كامل)', bd_expected_how: 'الصافي لحد دلوقتي + الأيام اللي مالهاش سجل أو لسه جاية',
+  m_per_minute: 'بالدقيقة على حسب سعر الساعة: دقايق التأخير × (سعر الساعة ÷ 60) × {rate}', m_fixed: '{amt} ثابتة عن كل دقيقة تأخير',
+  m_hour: 'بالساعة اللي بتبدأ: الساعات بتتقرّب لأعلى × سعر الساعة × {rate}', m_daily: '{rate} من اليومية عن كل يوم تأخير', m_custom: 'شرائح مخصصة ({n})',
+  rules_h: 'القواعد المستخدمة',
+  rule_grace: 'فترة السماح: {g} دقيقة.', rule_grace_full: 'أول ما تعدّي، كل دقايق التأخير بتتحسب.', rule_grace_excess: 'الدقايق اللي بعدها بس هي اللي بتتحسب.',
+  rule_ot_end: 'الأوفر تايم: الوقت اللي بتشتغله بعد ميعاد النهاية الرسمي ({end})، بمعامل {mult}', rule_ot_hours: 'الأوفر تايم: الوقت اللي بيزيد عن {h} ساعة شغل عادية، بمعامل {mult}', rule_ot_from: '، من {m} دقيقة.',
+  rule_weekend_work: 'أيام الإجازة الأسبوعية: {list}، بتتحسب أيام شغل.', rule_weekend_ot: 'أيام الإجازة الأسبوعية: {list}، مش أيام شغل؛ والحضور فيها بيتدفع كأوفر تايم.', rule_weekend_none: 'أيام الإجازة الأسبوعية: مفيش محدد.',
+  rule_hol_paid: 'الإجازات الرسمية بمرتب.', rule_hol_unpaid: 'الإجازات الرسمية من غير مرتب.', rule_leave_paid: 'الإجازات بمرتب.', rule_leave_unpaid: 'الإجازات من غير مرتب.',
+  rule_caps: 'خصم التأخير عمره ما بيزيد عن المرتب الأساسي لليوم ده، والمرتب الأساسي عمره ما بيزيد عن المرتب الشهري.',
+  rule_precision: 'الأرقام بتتحسب بدقة كاملة وبتتقرّب في العرض بس، فممكن الإجمالي يختلف عن مجموع الصفوف الظاهرة بـ 0.01.',
+  calc_foot: 'كل النتايج تقريبية، ودقتها على قد دقة قواعد المرتب اللي كتبتها في إعدادات المرتب.',
+
+  data_h: 'تصدير واستيراد البيانات',
+  data_hint: 'بياناتك بتتحفظ لوحدها على الموبايل ده بس. صدّر ملف نسخة احتياطية كل فترة، واستخدم «استيراد» عشان ترجّعها على الموبايل ده أو على جهاز تاني.',
+  ds_saved: 'بيتحفظ لوحده على الجهاز ده.', ds_last: 'آخر ملف نسخة احتياطية: {d}', ds_never: 'لسه ما اتعملش', ds_persist: 'محمي من المسح التلقائي بواسطة المتصفح: {v}',
+  ds_yes: 'أيوه', ds_no: 'لأ', ds_unknown: 'مش معروف',
+  btn_export: 'تصدير البيانات', btn_import: 'استيراد البيانات', bk_summary: 'انسخ أو الصق النسخة الاحتياطية كنص', bk_label: 'نص النسخة الاحتياطية (JSON)', bk_copy: 'انسخ النص', bk_import: 'استورد من النص',
+  sm_h: 'الشهور المحفوظة على الموبايل ده', sm_empty: 'لسه مفيش شهور محفوظة.', sm_line: '{recs}، الصافي التقريبي {net}', sm_recv: '، استلمت {amt}', sm_current: 'مفتوح دلوقتي', sm_open: 'افتح',
+  clear_h: 'مسح البيانات', btn_clear_month: 'امسح الشهر ده', btn_reset: 'امسح كل البيانات', b_press_clear: 'دوس تاني للمسح', b_press_reset: 'دوس تاني للمسح الكامل',
+  clear_hint: 'مسح الشهر بيشيل الحضور والخصومات والإضافات والمرتب الفعلي والملاحظات بتوعه. الإعدادات بتفضل زي ما هي. كل زرار بيطلب منك تدوس عليه مرة تانية للتأكيد.',
+  dm_saved: 'النسخة الاحتياطية اتحفظت باسم {name}.', dm_cancelled: 'التصدير اتلغى.',
+  dm_created: 'اتعمل ملف النسخة الاحتياطية {name}. لو مفيش حاجة نزلت، انسخ النص اللي تحت بدل كده.',
+  dm_nofile: 'مقدرناش نعمل ملف هنا. انسخ النص اللي تحت بدل كده.',
+  dm_copied: 'النص اتنسخ.', dm_manual: 'حدد النص وانسخه بإيدك.',
+  dm_invalid: 'ده مش ملف نسخة احتياطية صحيح. اختار ملف JSON اتصدّر من الحاسبة دي.',
+  im_text: 'النسخة دي فيها {months} و{recs}.', im_fixes: '{items} هيتساب أو يرجع للوضع الافتراضي.', im_replace: 'الاستيراد بيمسح كل البيانات الموجودة دلوقتي على الجهاز ده ويحط مكانها بيانات النسخة.', im_go: 'استبدل بياناتي',
+  dm_imported: 'البيانات اتاستوردت.', dm_paste_first: 'الصق نص النسخة الاحتياطية الأول.', dm_unreadable: 'مقدرناش نقرا الملف.',
+  dm_cleared: 'اتمسح {month}.', dm_reset: 'كل البيانات اتمسحت ورجعت للوضع الافتراضي.'
+}
+};
+
+/* =====================================================================
+   CONSTANTS
+   ===================================================================== */
+const STORAGE_KEY = 'salaryAttendanceCalculator.v1';
+const BACKUP_KEY = STORAGE_KEY + '.backup';
+const CORRUPT_KEY = STORAGE_KEY + '.unreadable.';
+const LANG_KEY = 'salaryAttendanceCalculator.lang';
+const INSTALL_KEY = 'salaryAttendanceCalculator.installDismissed';
+const STATUS_KEYS = ['auto', 'present', 'late', 'overtime', 'late_overtime', 'absent', 'dayoff', 'holiday', 'leave'];
+const NON_WORK = ['absent', 'dayoff', 'holiday', 'leave'];
+const LATE_METHOD_KEYS = ['per_minute', 'per_minute_fixed', 'per_hour', 'daily', 'custom'];
+const DEFAULT_SETTINGS = {
+  monthlySalary: 10000, currency: 'EGP', workingDays: 26, hoursPerDay: 8,
+  startTime: '09:00', endTime: '17:00', graceMinutes: 15, graceMode: 'excess', allowOvernight: false,
+  lateMethod: 'per_minute', lateRate: 1,
+  lateTiers: [{ from: 1, value: 0.125 }, { from: 30, value: 0.25 }, { from: 60, value: 0.5 }], lateTierUnit: 'days',
+  otBasis: 'after_end', otMultiplier: 1.5, otMinMinutes: 0,
+  weekendDays: [], weekendWorking: false, holidaysPaid: true, leavePaid: true
+};
+const SETTING_ORDER = ['monthlySalary', 'currency', 'workingDays', 'hoursPerDay', 'allowOvernight', 'startTime', 'endTime', 'graceMinutes', 'graceMode',
+  'lateMethod', 'lateRate', 'lateTierUnit', 'otBasis', 'otMultiplier', 'otMinMinutes', 'weekendWorking', 'holidaysPaid', 'leavePaid'];
+const CUR_AR = { EGP: 'جنيه', SAR: 'ريال', AED: 'درهم', USD: 'دولار', EUR: 'يورو', KWD: 'دينار', QAR: 'ريال', JOD: 'دينار' };
+
+/* =====================================================================
+   LANGUAGE
+   ===================================================================== */
+let LANG = 'en';
+function t(key, p) {
+  const d = I18N[LANG];
+  let s = (d && d[key] !== undefined) ? d[key] : I18N.en[key];
+  if (typeof s !== 'string') return key;
+  return p ? s.replace(/\{(\w+)\}/g, (m, k) => (p[k] !== undefined ? p[k] : m)) : s;
+}
+/* Count phrases such as "3 days". Arabic has its own number forms (one, two, 3-10, 11+). */
+function pl(key, n) {
+  const f = (I18N[LANG]['pl_' + key]) || I18N.en['pl_' + key];
+  let form;
+  if (LANG === 'ar') form = n === 1 ? f.one : n === 2 ? f.two : (n >= 3 && n <= 10) ? f.few : f.many;
+  else form = n === 1 ? f.one : f.other;
+  return form.replace('{n}', n);
+}
+const monthName = m0 => I18N[LANG].months[m0];
+const dayShort = wd => I18N[LANG].days_short[wd];
+const dayFull = wd => I18N[LANG].days_full[wd];
+const statusName = k => t('st_' + k);
+const LRI = '\u2066', PDI = '\u2069';
+const ltr = s => (LANG === 'ar' ? LRI + s + PDI : s);          // keeps numbers and formulas in order inside Arabic text
+const curL = c => (LANG === 'ar' && CUR_AR[String(c).toUpperCase()]) ? CUR_AR[String(c).toUpperCase()] : c;
+const bdi = s => '<bdi>' + esc(s) + '</bdi>';
+const E = (k, p) => ({ k: k, p: p || null });                  // an error/warning is a key plus values, translated when shown
+const errText = e => t(e.k, e.p);
+
+/* =====================================================================
+   GENERAL HELPERS
+   ===================================================================== */
+const $ = (sel, root) => (root || document).querySelector(sel);
+const $$ = (sel, root) => Array.from((root || document).querySelectorAll(sel));
+const pad2 = n => String(n).padStart(2, '0');
+const isNum = v => typeof v === 'number' && isFinite(v);
+const round2 = n => isNum(n) ? Math.round((n + Number.EPSILON) * 100) / 100 : 0;
+const clone = o => JSON.parse(JSON.stringify(o));
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const uid = () => 'i' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+function parseISO(s) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || '');
+  if (!m) return null;
+  const y = +m[1], mo = +m[2], d = +m[3];
+  const dt = new Date(Date.UTC(y, mo - 1, d));
+  if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) return null;
+  return { y, m: mo - 1, d, wd: dt.getUTCDay() };
+}
+const isoDate = (y, m0, d) => y + '-' + pad2(m0 + 1) + '-' + pad2(d);
+const monthKey = (y, m0) => y + '-' + pad2(m0 + 1);
+const daysInMonth = (y, m0) => new Date(Date.UTC(y, m0 + 1, 0)).getUTCDate();
+function parseTime(s) {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(s || '');
+  if (!m) return null;
+  const h = +m[1], mi = +m[2];
+  return (h > 23 || mi > 59) ? null : h * 60 + mi;
+}
+let todayOverride = null;
+function todayISO() {
+  if (todayOverride) return todayOverride;
+  const d = new Date();
+  return isoDate(d.getFullYear(), d.getMonth(), d.getDate());
+}
+function fmtShort(iso) { const p = parseISO(iso); return p ? p.d + ' ' + monthName(p.m) : ''; }
+function fmtLong(iso) { const p = parseISO(iso); return p ? (LANG === 'ar' ? dayFull(p.wd) : dayShort(p.wd)) + ' ' + p.d + ' ' + monthName(p.m) + ' ' + p.y : ''; }
+function localDateOf(isoStamp) { const d = new Date(isoStamp); return isNaN(d) ? null : isoDate(d.getFullYear(), d.getMonth(), d.getDate()); }
+
+const nf2 = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const MINUS = '\u2212';
+function num2(n) { n = isNum(n) ? n : 0; if (Math.abs(n) < 0.005) n = 0; return ltr((n < 0 ? MINUS : '') + nf2.format(Math.abs(n))); }
+function money(n, cur) { return num2(n) + (cur ? ' ' + curL(cur) : ''); }
+function signedMoney(n, cur) {
+  n = isNum(n) ? n : 0;
+  if (Math.abs(n) < 0.005) return money(0, cur);
+  return ltr((n > 0 ? '+' : MINUS) + nf2.format(Math.abs(n))) + (cur ? ' ' + curL(cur) : '');
+}
+function negMoney(n, cur) { return n > 0.004 ? ltr(MINUS + nf2.format(n)) + (cur ? ' ' + curL(cur) : '') : money(0, cur); }
+const negHtml = (n, c) => n > 0.004 ? '<span class="neg">' + negMoney(n, c) + '</span>' : money(0, c);
+const posHtml = (n, c) => n > 0.004 ? '<span class="pos">' + signedMoney(n, c) + '</span>' : money(0, c);
+function dur(min) {
+  min = Math.round(min);
+  if (!(min > 0)) return '0' + t('u_m');
+  const h = Math.floor(min / 60), m = min % 60;
+  return h ? h + t('u_h') + ' ' + pad2(m) + t('u_m') : m + t('u_m');
+}
+const durCell = min => (min > 0 ? dur(min) : '\u2013');
+const trimNum = n => String(Math.round(n * 10000) / 10000);
+
+/* =====================================================================
+   VALIDATION OF SETTINGS
+   Returns null, or an error object {k, p} that is translated when shown.
+   `cand` is the full settings object with the new value applied, so
+   cross-field rules (overnight, start/end) can be checked.
+   ===================================================================== */
+function validateSetting(key, val, cand) {
+  switch (key) {
+    case 'monthlySalary':
+      if (!isNum(val)) return E('v_salary_num');
+      if (val < 0) return E('v_salary_neg');
+      if (val > 1e9) return E('v_salary_big');
+      return null;
+    case 'currency':
+      if (typeof val !== 'string' || !val.trim()) return E('v_cur_empty');
+      if (val.trim().length > 8) return E('v_cur_long');
+      return null;
+    case 'workingDays':
+      if (!isNum(val) || !Number.isInteger(val) || val < 1 || val > 31) return E('v_days');
+      return null;
+    case 'hoursPerDay':
+      if (!isNum(val) || val <= 0 || val > 24) return E('v_hours');
+      return null;
+    case 'startTime':
+    case 'endTime': {
+      if (typeof val !== 'string' || parseTime(val) === null) return E('v_time');
+      const s = parseTime(cand.startTime), e = parseTime(cand.endTime);
+      if (s !== null && e !== null) {
+        if (s === e) return E('v_same');
+        if (e < s && !cand.allowOvernight) return E('v_end_before');
+      }
+      return null;
+    }
+    case 'allowOvernight': {
+      if (typeof val !== 'boolean') return E('v_invalid');
+      const s = parseTime(cand.startTime), e = parseTime(cand.endTime);
+      if (!val && s !== null && e !== null && e <= s) return E('v_overnight_off');
+      return null;
+    }
+    case 'graceMinutes':
+      if (!isNum(val) || val < 0 || val > 480) return E('v_grace');
+      return null;
+    case 'graceMode': return (val === 'excess' || val === 'full') ? null : E('v_invalid');
+    case 'lateMethod': return LATE_METHOD_KEYS.indexOf(val) >= 0 ? null : E('v_invalid');
+    case 'lateRate':
+      if (!isNum(val) || val < 0) return E('v_rate');
+      if (cand.lateMethod === 'daily' && val > 1) return E('v_rate_daily');
+      if (val > 1e6) return E('v_big');
+      return null;
+    case 'lateTierUnit': return (val === 'days' || val === 'amount') ? null : E('v_invalid');
+    case 'otBasis': return (val === 'after_end' || val === 'beyond_hours') ? null : E('v_invalid');
+    case 'otMultiplier':
+      if (!isNum(val) || val < 0 || val > 10) return E('v_mult');
+      return null;
+    case 'otMinMinutes':
+      if (!isNum(val) || val < 0 || val > 480) return E('v_grace');
+      return null;
+    case 'weekendWorking': case 'holidaysPaid': case 'leavePaid':
+      return typeof val === 'boolean' ? null : E('v_invalid');
+    default: return null;
+  }
+}
+function validTiers(tr) {
+  return Array.isArray(tr) && tr.length <= 20 && tr.every(x => x && isNum(x.from) && x.from >= 0 && x.from <= 1440 && isNum(x.value) && x.value >= 0 && x.value <= 1e6);
+}
+
+/* =====================================================================
+   CALCULATION ENGINE (pure functions, no DOM access)
+   The rules here are unchanged. Errors and warnings are returned as
+   {k, p} objects so the interface can show them in either language.
+   ===================================================================== */
+const Calc = (function () {
+
+  /* Base rates.
+     daily  = monthly salary / working days per month (the company's own divisor, never assumed to be 30)
+     hourly = daily / standard working hours per day                                                  */
+  function getRates(s) {
+    const daily = s.workingDays > 0 ? s.monthlySalary / s.workingDays : 0;
+    const hourly = s.hoursPerDay > 0 ? daily / s.hoursPerDay : 0;
+    return { daily, hourly, perMinute: hourly / 60 };
+  }
+
+  /* Late deduction before rounding and before the daily cap.
+     `mins` are the COUNTED late minutes (already reduced by the grace period rule). */
+  function lateRaw(mins, rates, s) {
+    if (!(mins > 0)) return 0;
+    switch (s.lateMethod) {
+      case 'per_minute':       return mins * rates.perMinute * s.lateRate;            // pay for the time missed x multiplier
+      case 'per_minute_fixed': return mins * s.lateRate;                              // fixed amount for every late minute
+      case 'per_hour':         return Math.ceil(mins / 60) * rates.hourly * s.lateRate; // each started hour is deducted in full
+      case 'daily':            return rates.daily * s.lateRate;                       // a share of the daily salary per late day
+      case 'custom': {                                                                // tier table: highest tier reached applies
+        const tiers = s.lateTiers.slice().sort((a, b) => a.from - b.from);
+        let hit = null;
+        tiers.forEach(x => { if (mins >= x.from) hit = x; });
+        if (!hit) return 0;
+        return s.lateTierUnit === 'days' ? hit.value * rates.daily : hit.value;
+      }
+      default: return 0;
+    }
+  }
+  /* A late deduction can never be larger than that day's base pay. */
+  function lateDeduction(mins, rates, s) {
+    return round2(Math.min(lateRaw(mins, rates, s), rates.daily));
+  }
+
+  /* Calculate one attendance record.
+     Steps: 1) read the status, 2) validate the times, 3) find late minutes (grace period rule),
+     4) find overtime minutes (basis rule), 5) convert to money.                                    */
+  function computeDay(rec, s) {
+    const rates = getRates(s);
+    const pd = parseISO(rec.date);
+    const status = STATUS_KEYS.indexOf(rec.status) >= 0 ? rec.status : 'auto';
+    const d = {
+      id: rec.id, date: rec.date, weekday: pd ? pd.wd : null, status: status, labelKey: status === 'auto' ? 'present' : status, kind: 'worked',
+      checkIn: rec.checkIn || '', checkOut: rec.checkOut || '', note: rec.note || '',
+      valid: true, errors: [], warnings: [],
+      rawLate: 0, lateMin: 0, workedMin: 0, otMin: 0,
+      base: 0, lateDed: 0, lateDedNoGrace: 0, otPay: 0, net: 0,
+      paid: false, attended: false, weekendWork: false, info: {}
+    };
+    if (!pd) { d.valid = false; d.errors.push(E('e_date_invalid')); return d; }
+
+    // Days that are not worked: no times are used.
+    if (NON_WORK.indexOf(status) >= 0) {
+      d.kind = status;
+      d.paid = (status === 'holiday' && s.holidaysPaid) || (status === 'leave' && s.leavePaid);
+      d.base = d.paid ? rates.daily : 0;
+      d.net = round2(d.base);
+      return d;
+    }
+
+    // Worked days: validate the times.
+    const ci = parseTime(d.checkIn), co = parseTime(d.checkOut);
+    if (d.checkIn && ci === null) d.errors.push(E('e_ci_bad'));
+    if (d.checkOut && co === null) d.errors.push(E('e_co_bad'));
+    if (!d.checkIn && status !== 'present') d.errors.push(E('e_ci_req'));
+    if (!d.checkIn && d.checkOut) d.errors.push(E('e_ci_before_co'));
+    let duration = null;
+    if (ci !== null && co !== null) {
+      duration = co - ci;
+      if (duration === 0) d.errors.push(E('e_co_same'));
+      else if (duration < 0) {
+        if (s.allowOvernight) duration += 1440;
+        else d.errors.push(E('e_co_earlier'));
+      }
+    }
+    if (d.errors.length) { d.valid = false; return d; }
+
+    d.attended = true;
+    d.weekendWork = s.weekendDays.indexOf(pd.wd) >= 0 && !s.weekendWorking;
+    const applyLate = (status === 'auto' || status === 'late' || status === 'late_overtime') && !d.weekendWork;
+    const applyOT = (status === 'auto' || status === 'overtime' || status === 'late_overtime');
+    const startMin = parseTime(s.startTime), endMin = parseTime(s.endTime);
+    let shiftLen = endMin - startMin; if (shiftLen <= 0) shiftLen += 1440;
+    d.info.shiftLen = shiftLen;
+
+    // Lateness: minutes after the official start, then the grace period rule.
+    let ciRel = null;
+    if (ci !== null) {
+      ciRel = ci - startMin;
+      if (s.allowOvernight) { while (ciRel > 720) ciRel -= 1440; while (ciRel <= -720) ciRel += 1440; }
+      d.rawLate = Math.max(0, ciRel);
+    }
+    let counted = 0;
+    if (d.rawLate > s.graceMinutes) counted = s.graceMode === 'full' ? d.rawLate : d.rawLate - s.graceMinutes;
+    d.info.counted = counted;
+    d.lateMin = applyLate ? counted : 0;
+    const noGraceMin = applyLate ? d.rawLate : 0;
+
+    // Time worked and overtime.
+    if (duration !== null) {
+      d.workedMin = duration;
+      let ot;
+      if (d.weekendWork) ot = duration;                                        // weekend not counted as a working day: all time is overtime
+      else if (s.otBasis === 'beyond_hours') ot = duration - s.hoursPerDay * 60; // time worked beyond the standard hours
+      else ot = (ciRel + duration) - shiftLen;                                 // time worked after the official end time
+      ot = Math.max(0, Math.round(ot));
+      if (!d.weekendWork && ot < s.otMinMinutes) ot = 0;
+      d.info.otRaw = ot;
+      d.otMin = applyOT ? ot : 0;
+    } else if (ci !== null) {
+      d.warnings.push(E('w_no_checkout'));
+    }
+
+    // Money.
+    d.paid = !d.weekendWork;
+    d.base = d.weekendWork ? 0 : rates.daily;
+    d.lateDed = lateDeduction(d.lateMin, rates, s);
+    d.lateDedNoGrace = lateDeduction(noGraceMin, rates, s);
+    d.otPay = round2((d.otMin / 60) * rates.hourly * s.otMultiplier);
+    d.net = round2(d.base - d.lateDed + d.otPay);
+
+    if (status === 'auto') {
+      const l = d.lateMin > 0, o = d.otMin > 0;
+      d.labelKey = l && o ? 'late_overtime' : l ? 'late' : o ? 'overtime' : 'present';
+    }
+    return d;
+  }
+
+  /* Calculate a whole month.
+     earnedNet   = base earned (paid days x daily rate, never above the monthly salary)
+                   - late deductions + overtime - other deductions + other additions
+     expectedNet = earnedNet + pay for the days without a record or still to come (assumed fully attended) */
+  function computeMonth(md, y, m0, today) {
+    const s = md.settings, rates = getRates(s);
+    const days = md.records.map(r => computeDay(r, s)).sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+    const valid = days.filter(d => d.valid);
+    const tt = { daysWorked: 0, absent: 0, lateDays: 0, lateMin: 0, otMin: 0, paidDays: 0, workedMin: 0, holidays: 0, leaveDays: 0, dayOffs: 0, accounted: 0, lateDed: 0, lateDedNoGrace: 0, otPay: 0 };
+    valid.forEach(d => {
+      if (d.attended) tt.daysWorked++;
+      if (d.kind === 'absent') tt.absent++;
+      if (d.kind === 'holiday') tt.holidays++;
+      if (d.kind === 'leave') tt.leaveDays++;
+      if (d.kind === 'dayoff') tt.dayOffs++;
+      if (d.lateMin > 0) tt.lateDays++;
+      if (d.paid) tt.paidDays++;
+      if (d.kind !== 'dayoff' && !d.weekendWork) tt.accounted++;
+      tt.lateMin += d.lateMin; tt.otMin += d.otMin; tt.workedMin += d.workedMin;
+      tt.lateDed += d.lateDed; tt.lateDedNoGrace += d.lateDedNoGrace; tt.otPay += d.otPay;
+    });
+    tt.lateDed = round2(tt.lateDed); tt.lateDedNoGrace = round2(tt.lateDedNoGrace); tt.otPay = round2(tt.otPay);
+
+    const otherDed = round2(md.deductions.reduce((a, x) => a + x.amount, 0));
+    const otherAdd = round2(md.additions.reduce((a, x) => a + x.amount, 0));
+    const baseRaw = tt.paidDays * rates.daily;
+    const base = round2(Math.min(baseRaw, s.monthlySalary));
+    const baseCapped = baseRaw > s.monthlySalary + 0.005;
+    const earnedNet = round2(base - tt.lateDed + tt.otPay - otherDed + otherAdd);
+
+    // Working days without a record: past dates (up to today) are "unrecorded", later dates are "remaining".
+    const have = {}; md.records.forEach(r => { have[r.date] = true; });
+    const dim = daysInMonth(y, m0);
+    let unrecorded = 0, future = 0;
+    for (let day = 1; day <= dim; day++) {
+      const ds = isoDate(y, m0, day);
+      const wd = new Date(Date.UTC(y, m0, day)).getUTCDay();
+      if (s.weekendDays.indexOf(wd) >= 0 || have[ds]) continue;
+      if (ds <= today) unrecorded++; else future++;
+    }
+    unrecorded = Math.min(unrecorded, Math.max(0, s.workingDays - tt.accounted));
+    future = Math.min(future, Math.max(0, s.workingDays - tt.accounted - unrecorded));
+
+    // Days without a record (past or still to come) are assumed to be fully attended and paid at the daily rate.
+    const projBase = round2(Math.min(baseRaw + (unrecorded + future) * rates.daily, s.monthlySalary));
+    const projectedAdd = round2(Math.max(0, projBase - base));
+    const expectedNet = round2(earnedNet + projectedAdd);
+
+    return {
+      days: days, invalid: days.filter(d => !d.valid), totals: tt, rates: rates,
+      recordCount: md.records.length, lastDate: days.length ? days[days.length - 1].date : null,
+      baseRaw: baseRaw, base: base, baseCapped: baseCapped,
+      lateDed: tt.lateDed, lateDedNoGrace: tt.lateDedNoGrace, otPay: tt.otPay, otherDed: otherDed, otherAdd: otherAdd,
+      earnedNet: earnedNet, unrecorded: unrecorded, future: future,
+      expectedGross: projBase, projectedAdd: projectedAdd, expectedNet: expectedNet
+    };
+  }
+
+  /* Compare expected and actual salary and look for possible explanations.
+     Only amounts that come from the data entered are used. Every item is a possibility, never a fact.
+     The combination of same-direction items that gets closest to the difference (without exceeding it)
+     is counted as "explained"; whatever is left is "unexplained".                                      */
+  function reconcile(m, actual) {
+    if (!isNum(actual)) return null;
+    const expected = m.expectedNet;
+    const diff = round2(actual - expected);
+    const state = Math.abs(diff) < 0.005 ? 'match' : diff < 0 ? 'under' : 'over';
+    const c = [];
+    if (state === 'under') {
+      if (m.otPay > 0.004) c.push({ key: 'ot', k: 'r_ot', amount: -m.otPay });
+      if (m.projectedAdd > 0.004) c.push({ key: 'missing', k: 'r_missing', n: m.unrecorded + m.future, amount: -m.projectedAdd });
+      if (m.otherAdd > 0.004) c.push({ key: 'add', k: 'r_add', amount: -m.otherAdd });
+      const extra = round2(m.lateDedNoGrace - m.lateDed);
+      if (extra > 0.004) c.push({ key: 'grace', k: 'r_grace', amount: -extra });
+    } else if (state === 'over') {
+      if (m.lateDed > 0.004) c.push({ key: 'late', k: 'r_late', amount: m.lateDed });
+      if (m.otherDed > 0.004) c.push({ key: 'ded', k: 'r_ded', amount: m.otherDed });
+    }
+    let best = { mask: 0, sum: 0, gap: Math.abs(diff), count: 0 };
+    for (let mask = 1; mask < (1 << c.length); mask++) {
+      let sum = 0, count = 0;
+      for (let i = 0; i < c.length; i++) if (mask & (1 << i)) { sum += c[i].amount; count++; }
+      if (Math.abs(sum) > Math.abs(diff) + 0.005) continue;
+      const gap = Math.abs(diff - sum);
+      if (gap < best.gap - 0.005 || (Math.abs(gap - best.gap) <= 0.005 && count < best.count)) best = { mask: mask, sum: sum, gap: gap, count: count };
+    }
+    c.forEach((x, i) => { x.used = !!(best.mask & (1 << i)); x.amount = round2(x.amount); });
+    const explained = round2(best.sum);
+    return { expected: expected, actual: actual, diff: diff, state: state, items: c, explained: explained, unexplained: round2(diff - explained) };
+  }
+
+  return { getRates: getRates, lateRaw: lateRaw, lateDeduction: lateDeduction, computeDay: computeDay, computeMonth: computeMonth, reconcile: reconcile };
+})();
+
+/* =====================================================================
+   STORE: state, persistence, import / export
+   Everything is kept in localStorage on this device. Each month has its own
+   settings, records, deductions, additions, actual salary and notes.
+   ===================================================================== */
+let state = null;
+let storageOK = true;
+let persisted = null;      // true / false once the browser has answered the "keep my data" request
+let M = null, R = null;    // computed month and reconciliation for the selected month
+const ui = { editing: { att: null, ded: null, add: null, exp: null }, detailId: null, staged: null, expFilter: { category: '', from: '', to: '' } };
+
+function sanitizeSettings(src, fixes) {
+  const out = clone(DEFAULT_SETTINGS);
+  if (!src || typeof src !== 'object') return out;
+  SETTING_ORDER.forEach(key => {
+    if (!(key in src)) return;
+    const cand = Object.assign({}, out, { [key]: src[key] });
+    if (validateSetting(key, src[key], cand) === null) out[key] = typeof src[key] === 'string' ? src[key].trim() : src[key];
+    else fixes.count++;
+  });
+  if (Array.isArray(src.weekendDays)) {
+    const w = src.weekendDays.filter(n => Number.isInteger(n) && n >= 0 && n <= 6);
+    out.weekendDays = Array.from(new Set(w)).sort();
+  }
+  if (validTiers(src.lateTiers)) out.lateTiers = src.lateTiers.map(x => ({ from: x.from, value: x.value }));
+  return out;
+}
+function sanitizeState(raw) {
+  if (!raw || typeof raw !== 'object') throw new Error('Not a valid backup');
+  const src = (raw.data && typeof raw.data === 'object') ? raw.data : raw;
+  if (!src.months || typeof src.months !== 'object') throw new Error('No months found');
+  const fixes = { count: 0 };
+  const out = { version: 1, selected: null, months: {}, demo: false, profile: { name: '' }, lastBackup: null };
+  if (src.profile && typeof src.profile.name === 'string') out.profile.name = src.profile.name.trim().slice(0, 60);
+  if (typeof src.lastBackup === 'string' && localDateOf(src.lastBackup)) out.lastBackup = src.lastBackup;
+  Object.keys(src.months).forEach(key => {
+    const km = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(key);
+    if (!km) { fixes.count++; return; }
+    const m = src.months[key] || {};
+    const md = { settings: sanitizeSettings(m.settings, fixes), records: [], deductions: [], additions: [], actualReceived: null, notes: '', expenses: [] };
+    const seen = {};
+    (Array.isArray(m.records) ? m.records : []).forEach(r => {
+      const p = r && parseISO(r.date);
+      const okTime = v => v === '' || v == null || parseTime(v) !== null;
+      if (!p || monthKey(p.y, p.m) !== key || seen[r.date] || !okTime(r.checkIn) || !okTime(r.checkOut)) { fixes.count++; return; }
+      seen[r.date] = true;
+      md.records.push({ id: typeof r.id === 'string' && r.id ? r.id : uid(), date: r.date, checkIn: r.checkIn || '', checkOut: r.checkOut || '', status: STATUS_KEYS.indexOf(r.status) >= 0 ? r.status : 'auto', note: typeof r.note === 'string' ? r.note.slice(0, 200) : '' });
+    });
+    ['deductions', 'additions'].forEach(k => {
+      (Array.isArray(m[k]) ? m[k] : []).forEach(x => {
+        if (!x || typeof x.name !== 'string' || !x.name.trim() || !isNum(x.amount) || x.amount <= 0 || x.amount > 1e9) { fixes.count++; return; }
+        md[k].push({ id: typeof x.id === 'string' && x.id ? x.id : uid(), name: x.name.trim().slice(0, 60), amount: x.amount, date: parseISO(x.date) ? x.date : '', note: typeof x.note === 'string' ? x.note.slice(0, 200) : '' });
+      });
+    });
+    if (isNum(m.actualReceived) && m.actualReceived >= 0) md.actualReceived = m.actualReceived;
+    if (typeof m.notes === 'string') md.notes = m.notes.slice(0, 2000);
+    (Array.isArray(m.expenses) ? m.expenses : []).forEach(x => {
+      const p = x && parseISO(x.date);
+      if (!p || monthKey(p.y, p.m) !== key) { fixes.count++; return; }
+      if (!x || typeof x.category !== 'string' || !x.category.trim() || !isNum(x.amount) || x.amount <= 0 || x.amount > 1e9) { fixes.count++; return; }
+      md.expenses.push({ id: typeof x.id === 'string' && x.id ? x.id : uid(), date: x.date, category: x.category.trim().slice(0, 40), amount: x.amount, note: typeof x.note === 'string' ? x.note.slice(0, 200) : '' });
+    });
+    out.months[key] = md;
+  });
+  out.customCategories = Array.isArray(src.customCategories)
+    ? Array.from(new Set(src.customCategories.filter(c => typeof c === 'string' && c.trim()).map(c => c.trim().slice(0, 40)))).slice(0, 50)
+    : [];
+  const keys = Object.keys(out.months).sort();
+  const sel = src.selected;
+  if (sel && Number.isInteger(sel.y) && Number.isInteger(sel.m) && sel.m >= 0 && sel.m <= 11 && sel.y >= 2000 && sel.y <= 2100) out.selected = { y: sel.y, m: sel.m };
+  else if (keys.length) { const k = keys[keys.length - 1]; out.selected = { y: +k.slice(0, 4), m: +k.slice(5) - 1 }; }
+  else { const tp = parseISO(todayISO()); out.selected = { y: tp.y, m: tp.m }; }
+  return { state: out, fixes: fixes.count };
+}
+function defaultState() {
+  const tp = parseISO(todayISO());
+  return { version: 1, selected: { y: tp.y, m: tp.m }, months: {}, demo: false, profile: { name: '' }, lastBackup: null, customCategories: [] };
+}
+function demoState() {
+  const mk = (id, date, i, o) => ({ id: id, date: date, checkIn: i, checkOut: o, status: 'auto', note: '' });
+  const mx = (id, date, category, amount, note) => ({ id: id, date: date, category: category, amount: amount, note: note });
+  return {
+    version: 1, selected: { y: 2026, m: 8 }, demo: true, profile: { name: '' }, lastBackup: null, customCategories: [],
+    months: { '2026-09': {
+      settings: clone(DEFAULT_SETTINGS),
+      records: [mk('demo1', '2026-09-01', '09:00', '17:00'), mk('demo2', '2026-09-02', '09:10', '17:00'), mk('demo3', '2026-09-03', '09:25', '18:30'), mk('demo4', '2026-09-04', '09:00', '17:00')],
+      deductions: [], additions: [], actualReceived: null, notes: '',
+      expenses: [mx('dexp1', '2026-09-03', 'transport', 50, 'Uber to work'), mx('dexp2', '2026-09-04', 'food', 120, '')]
+    } }
+  };
+}
+function detectStorage() {
+  try { const k = STORAGE_KEY + '.test'; localStorage.setItem(k, '1'); localStorage.removeItem(k); return true; } catch (e) { return false; }
+}
+/* Load saved data. If the saved copy cannot be read, keep the unreadable text
+   (never overwrite it silently) and fall back to the last good backup copy. */
+function loadState() {
+  if (!storageOK) return { state: null, status: 'none' };
+  let raw = null;
+  try { raw = localStorage.getItem(STORAGE_KEY); } catch (e) { /* ignore */ }
+  if (raw === null) return { state: null, status: 'none' };
+  try {
+    const s = sanitizeState(JSON.parse(raw)).state;
+    try { localStorage.setItem(BACKUP_KEY, raw); } catch (e) { /* ignore */ }
+    return { state: s, status: 'ok' };
+  } catch (e) {
+    try { localStorage.setItem(CORRUPT_KEY + Date.now(), raw); } catch (e2) { /* ignore */ }
+    let bk = null;
+    try { bk = localStorage.getItem(BACKUP_KEY); } catch (e3) { /* ignore */ }
+    if (bk) { try { return { state: sanitizeState(JSON.parse(bk)).state, status: 'recovered' }; } catch (e4) { /* ignore */ } }
+    return { state: null, status: 'unreadable' };
+  }
+}
+function save() {
+  if (!storageOK) return;
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+  catch (e) { storageOK = false; $('#storage-warning').hidden = false; }
+}
+function ensureMonth(key) {
+  if (state.months[key]) return state.months[key];
+  const keys = Object.keys(state.months).sort();
+  let src = null;
+  for (let i = keys.length - 1; i >= 0; i--) if (keys[i] < key) { src = state.months[keys[i]]; break; }
+  if (!src && keys.length) src = state.months[keys[0]];
+  state.months[key] = { settings: src ? clone(src.settings) : clone(DEFAULT_SETTINGS), records: [], deductions: [], additions: [], actualReceived: null, notes: '', expenses: [] };
+  return state.months[key];
+}
+const curKey = () => monthKey(state.selected.y, state.selected.m);
+const cur = () => ensureMonth(curKey());
+const monthHasData = md => md.records.length || md.deductions.length || md.additions.length || md.actualReceived != null || (md.notes && md.notes.trim()) || md.expenses.length;
+
+/* =====================================================================
+   STATIC TEXT
+   ===================================================================== */
+function applyStatic() {
+  $$('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+  $$('[data-i18n-ph]').forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
+  $$('[data-i18n-aria]').forEach(el => { el.setAttribute('aria-label', t(el.dataset.i18nAria)); });
+  $$('.toggle').forEach(el => { el.dataset.show = t('show'); el.dataset.hide = t('hide'); });
+  document.title = t('app_title');
+}
+
+/* =====================================================================
+   RENDERING
+   ===================================================================== */
+function recalc() {
+  const md = cur();
+  M = Calc.computeMonth(md, state.selected.y, state.selected.m, todayISO());
+  R = Calc.reconcile(M, md.actualReceived);
+}
+function renderCalculated() {
+  recalc();
+  renderMonthTitle();
+  renderSummary();
+  renderSettingsLine();
+  renderAttendance();
+  renderAttDetail();
+  renderAdjust('ded');
+  renderAdjust('add');
+  renderExpenses();
+  renderActual();
+  renderRecon();
+  renderBreakdown();
+  renderSavedMonths();
+  renderDataStatus();
+  updateAttPreview();
+  updateCurLabels();
+}
+function updateCurLabels() {
+  const c = curL(cur().settings.currency);
+  $$('[data-cur-i18n]').forEach(el => { el.textContent = t(el.dataset.curI18n, { cur: c }); });
+}
+function renderMonthTitle() {
+  $('#month-title').textContent = monthName(state.selected.m) + ' ' + state.selected.y;
+  const nm = state.profile && state.profile.name;
+  $('#month-emp').innerHTML = nm ? esc(t('emp_line')).replace('{name}', bdi(nm)) : '';
+}
+
+function statusTagClass(k) {
+  if (k === 'late' || k === 'late_overtime') return 'late';
+  if (k === 'overtime') return 'ot';
+  if (k === 'absent') return 'absent';
+  if (k === 'dayoff' || k === 'holiday' || k === 'leave') return 'off';
+  return '';
+}
+const stat = (l, v) => '<div class="stat"><div class="s-label">' + l + '</div><div class="s-val num">' + v + '</div></div>';
+
+function renderSummary() {
+  const s = cur().settings, c = s.currency, cl = esc(curL(c)), T = M.totals;
+  const plainDays = M.days.filter(d => d.valid).length;
+  const subPrimary = plainDays ? t('sum_from', { n: pl('recday', plainDays), date: fmtShort(M.lastDate) }) : t('sum_none');
+  const remaining = M.unrecorded + M.future;
+  const subExpected = remaining > 0 ? t('sum_exp_incl', { n: pl('workday', remaining) }) : t('sum_exp_none');
+  let third;
+  if (!R) {
+    third = '<div class="a-label">' + t('sum_actual') + '</div><div class="mid">' + t('sum_not_entered') + '</div><div class="a-sub"><button type="button" class="linkbtn" data-goto="actual">' + t('sum_enter_link') + '</button> ' + t('sum_enter_rest') + '</div>';
+  } else {
+    const badge = R.state === 'under' ? '<span class="badge under">' + t('b_under') + '</span>' : R.state === 'over' ? '<span class="badge over">' + t('b_over') + '</span>' : '<span class="badge match">' + t('b_match') + '</span>';
+    const cls = R.state === 'under' ? 'neg' : R.state === 'over' ? 'pos' : '';
+    third = '<div class="a-label">' + t('sum_vs') + '</div><div class="mid num ' + cls + '">' + signedMoney(R.diff) + ' <span class="cur">' + cl + '</span></div>' +
+      '<div class="a-sub">' + badge + ' ' + t('sum_received', { amt: money(R.actual, c) }) + '</div>';
+  }
+  $('#summary-hero').innerHTML =
+    '<div class="answers">' +
+      '<div class="answer primary"><div class="a-label">' + t('sum_earned') + '</div>' +
+        '<div class="big num">' + num2(M.earnedNet) + ' <span class="cur">' + cl + '</span></div><div class="a-sub">' + subPrimary + '</div></div>' +
+      '<div class="answer"><div class="a-label">' + t('sum_expected') + '</div><div class="mid num">' + num2(M.expectedNet) + ' <span class="cur">' + cl + '</span></div><div class="a-sub">' + subExpected + '</div></div>' +
+      '<div class="answer">' + third + '</div>' +
+    '</div>' +
+    '<div class="stats">' +
+      stat(t('l_days_worked'), String(T.daysWorked)) + stat(t('l_days_late'), String(T.lateDays)) +
+      stat(t('l_overtime'), (T.otMin / 60).toFixed(2) + ' ' + t('u_hours')) + stat(t('l_days_absent'), String(T.absent)) +
+    '</div>';
+  $('#summary-note').innerHTML = M.unrecorded > 0
+    ? '<p class="hint" style="margin-top:12px">' + esc(M.unrecorded === 1 ? t('sum_unrec_one', { n: pl('workday', 1), c: M.unrecorded }) : t('sum_unrec_many', { n: pl('workday', M.unrecorded), c: M.unrecorded })) + '</p>'
+    : '';
+  const rows = [
+    [t('l_monthly'), money(s.monthlySalary, c)],
+    [t('l_days_worked'), String(T.daysWorked)],
+    [t('l_days_absent'), String(T.absent)],
+    [t('l_days_late'), String(T.lateDays)],
+    [t('l_late_min'), String(T.lateMin)],
+    [t('l_ot_hours'), (T.otMin / 60).toFixed(2)]
+  ];
+  if (T.holidays + T.leaveDays > 0) rows.push([t('l_hol_leave'), String(T.holidays + T.leaveDays) + (s.holidaysPaid || s.leavePaid ? '' : ' ' + t('l_unpaid'))]);
+  rows.push(
+    [t('l_base'), money(M.base, c)],
+    [t('l_late_ded'), negHtml(M.lateDed, c)],
+    [t('l_ot_earn'), posHtml(M.otPay, c)],
+    [t('l_other_ded'), negHtml(M.otherDed, c)],
+    [t('l_other_add'), posHtml(M.otherAdd, c)]
+  );
+  $('#summary-ledger').innerHTML = rows.map(r => '<div class="row"><dt>' + r[0] + '</dt><dd>' + r[1] + '</dd></div>').join('') +
+    '<div class="row total"><dt>' + t('l_net_so_far') + '</dt><dd>' + money(M.earnedNet, c) + '</dd></div>';
+}
+
+function renderSettingsLine() {
+  const s = cur().settings;
+  $('#settings-line').textContent = t('set_line', { sal: money(s.monthlySalary, s.currency), days: s.workingDays, hrs: trimNum(s.hoursPerDay), start: s.startTime, end: s.endTime });
+}
+
+function rowActions(id) {
+  return '<button type="button" class="btn small" data-act="detail" data-id="' + id + '">' + t('b_details') + '</button> ' +
+    '<button type="button" class="btn small" data-act="edit" data-id="' + id + '">' + t('b_edit') + '</button> ' +
+    '<button type="button" class="btn small danger" data-act="del" data-id="' + id + '">' + t('b_delete') + '</button>';
+}
+function renderAttendance() {
+  const s = cur().settings, c = s.currency, box = $('#att-table'), alertEl = $('#att-alert');
+  if (M.invalid.length) {
+    alertEl.hidden = false;
+    alertEl.innerHTML = '<span>' + esc(t(M.invalid.length === 1 ? 'att_alert_one' : 'att_alert_many', { n: pl('rec', M.invalid.length), list: '' })) +
+      M.invalid.map(d => esc(fmtShort(d.date)) + ' (' + esc(errText(d.errors[0])) + ')').join(' ') + '</span>';
+  } else alertEl.hidden = true;
+  if (!M.days.length) {
+    box.innerHTML = '<p class="empty">' + esc(t('att_empty', { month: monthName(state.selected.m) + ' ' + state.selected.y })) + '</p>';
+    return;
+  }
+  const T = M.totals;
+  let rows = '';
+  M.days.forEach(d => {
+    const p = parseISO(d.date);
+    const sel = ui.detailId === d.id ? ' class="selected"' : '';
+    const head = '<td>' + p.d + ' ' + esc(monthName(p.m)) + '</td><td>' + esc(dayShort(p.wd)) + '</td><td class="num">' + (esc(d.checkIn) || '\u2013') + '</td><td class="num">' + (esc(d.checkOut) || '\u2013') + '</td>';
+    if (!d.valid) {
+      rows += '<tr class="invalid-row" data-id="' + d.id + '">' + head + '<td colspan="7"><span class="neg">' + esc(t('att_invalid', { err: errText(d.errors[0]) })) + '</span></td><td class="act">' + rowActions(d.id) + '</td></tr>';
+      return;
+    }
+    const tag = '<span class="tag ' + statusTagClass(d.labelKey) + '">' + esc(statusName(d.labelKey)) + '</span>' + (d.weekendWork ? '<span class="sub">' + t('att_weekend_work') + '</span>' : '') + (d.note ? '<span class="sub-note">' + bdi(d.note) + '</span>' : '');
+    const late = d.lateMin > 0 ? dur(d.lateMin) + (d.rawLate !== d.lateMin ? '<span class="sub">' + t('att_raw', { d: dur(d.rawLate) }) + '</span>' : '') : (d.rawLate > 0 && d.status !== 'present' && !d.weekendWork ? '\u2013<span class="sub">' + t('att_in_grace', { d: dur(d.rawLate) }) + '</span>' : '\u2013');
+    rows += '<tr' + sel + ' data-id="' + d.id + '">' + head + '<td>' + tag + '</td><td class="num">' + (d.workedMin > 0 ? dur(d.workedMin) : '\u2013') + '</td>' +
+      '<td class="num">' + late + '</td><td class="num">' + durCell(d.otMin) + '</td>' +
+      '<td class="num neg">' + (d.lateDed > 0 ? negMoney(d.lateDed) : '\u2013') + '</td><td class="num pos">' + (d.otPay > 0 ? signedMoney(d.otPay) : '\u2013') + '</td>' +
+      '<td class="num"><strong>' + num2(d.net) + '</strong></td><td class="act">' + rowActions(d.id) + '</td></tr>';
+  });
+  box.innerHTML = '<p class="hint scroll-hint">' + t('att_scroll') + '</p><div class="table-wrap" role="region" aria-label="' + esc(t('att_aria')) + '" tabindex="0"><table class="att"><caption class="sr">' + esc(t('att_caption', { cur: curL(c) })) + '</caption><thead><tr>' +
+    '<th>' + t('th_date') + '</th><th>' + t('th_day') + '</th><th class="num">' + t('th_in') + '</th><th class="num">' + t('th_out') + '</th><th>' + t('th_status') + '</th><th class="num">' + t('th_hours') + '</th><th class="num">' + t('th_late') + '</th><th class="num">' + t('th_ot') + '</th><th class="num">' + t('th_ded') + '</th><th class="num">' + t('th_otpay') + '</th><th class="num">' + t('th_net') + '</th><th>' + t('th_actions') + '</th></tr></thead>' +
+    '<tbody>' + rows + '</tbody><tfoot><tr><td>' + t('th_total') + '</td><td></td><td></td><td></td><td></td><td class="num">' + dur(T.workedMin) + '</td><td class="num">' + dur(T.lateMin) + '</td><td class="num">' + dur(T.otMin) + '</td>' +
+    '<td class="num neg">' + negMoney(M.lateDed) + '</td><td class="num pos">' + (M.otPay > 0.004 ? signedMoney(M.otPay) : '0.00') + '</td><td class="num">' + num2(M.days.reduce((a, d) => a + (d.valid ? d.net : 0), 0)) + '</td><td></td></tr></tfoot></table></div>' +
+    (M.baseCapped ? '<p class="hint" style="margin-top:8px">' + t('att_capped') + '</p>' : '');
+}
+
+function lateFormulaText(d, s) {
+  const r = Calc.getRates(s), c = s.currency, mins = d.lateMin;
+  const raw = Calc.lateRaw(mins, r, s);
+  let f;
+  switch (s.lateMethod) {
+    case 'per_minute': f = t('f_per_minute', { mins: mins, hourly: money(r.hourly), rate: trimNum(s.lateRate) }); break;
+    case 'per_minute_fixed': f = t('f_fixed', { mins: mins, amt: money(s.lateRate, c) }); break;
+    case 'per_hour': f = t('f_hour', { h: Math.ceil(mins / 60), hourly: money(r.hourly), rate: trimNum(s.lateRate) }); break;
+    case 'daily': f = t('f_daily', { daily: money(r.daily), rate: trimNum(s.lateRate) }); break;
+    default: f = t('f_custom', { mins: mins });
+  }
+  return f + ' = ' + money(raw, c) + (raw > r.daily + 0.005 ? t('f_cap', { daily: money(r.daily, c) }) : '');
+}
+function dayDetailLines(d, s) {
+  const r = Calc.getRates(s), c = s.currency, L = [];
+  if (!d.valid) return d.errors.map(errText);
+  const label = statusName(d.labelKey);
+  L.push(t(d.status === 'auto' ? 'dl_status_auto' : 'dl_status_manual', { label: label }));
+  if (d.kind !== 'worked') {
+    if (d.kind === 'absent') L.push(t('dl_absent'));
+    else if (d.kind === 'dayoff') L.push(t('dl_dayoff'));
+    else L.push(t((d.paid ? 'dl_paid_' : 'dl_unpaid_') + d.kind, { rate: money(r.daily, c) }));
+    if (d.note) L.push(t('dl_note', { note: d.note }));
+    return L;
+  }
+  if (d.weekendWork) L.push(t('dl_weekend'));
+  else L.push(t('dl_base', { rate: money(r.daily, c), sal: money(s.monthlySalary), days: s.workingDays }));
+  if (d.checkIn && !d.weekendWork) {
+    if (d.rawLate === 0) L.push(t('dl_nolate', { ci: d.checkIn, start: s.startTime }));
+    else {
+      let x = t('dl_late_base', { ci: d.checkIn, raw: d.rawLate, start: s.startTime }) + ' ';
+      if (d.rawLate <= s.graceMinutes) x += t('dl_grace_within', { g: s.graceMinutes });
+      else if (s.graceMode === 'full') x += t('dl_grace_full', { g: s.graceMinutes, raw: d.rawLate });
+      else x += t('dl_grace_excess', { g: s.graceMinutes, c: d.info.counted });
+      L.push(x);
+    }
+    if (d.rawLate > 0 && d.lateMin === 0 && d.info.counted > 0) L.push(t('dl_late_ignored', { label: label }));
+    if (d.lateMin > 0) L.push(t('dl_late_ded', { formula: lateFormulaText(d, s), amt: money(d.lateDed, c) }));
+  }
+  if (d.checkOut) {
+    if (d.otMin > 0) {
+      if (d.weekendWork) L.push(t('dl_ot_weekend', { worked: dur(d.workedMin) }));
+      else if (s.otBasis === 'beyond_hours') L.push(t('dl_ot_hours', { worked: dur(d.workedMin), ot: dur(d.otMin), h: trimNum(s.hoursPerDay) }));
+      else L.push(t('dl_ot_end', { co: d.checkOut, ot: dur(d.otMin), end: s.endTime }));
+      L.push(t('dl_ot_pay', { h: (d.otMin / 60).toFixed(2), hourly: money(r.hourly), mult: trimNum(s.otMultiplier), amt: money(d.otPay, c) }));
+    } else if (d.info.otRaw > 0) L.push(t('dl_ot_ignored', { label: label }));
+    else if (d.weekendWork) L.push(t('dl_no_ot_weekend'));
+    else L.push(t('dl_no_ot_' + (s.otBasis === 'beyond_hours' ? 'std' : 'end') + (s.otMinMinutes > 0 ? '_min' : ''), { m: s.otMinMinutes }));
+  } else L.push(t('dl_no_checkout'));
+  L.push(t('dl_net', { base: money(d.base, c), late: money(d.lateDed, c), ot: money(d.otPay, c), net: money(d.net, c) }));
+  if (d.note) L.push(t('dl_note', { note: d.note }));
+  return L;
+}
+function renderAttDetail() {
+  const box = $('#att-detail');
+  const d = ui.detailId && M.days.find(x => x.id === ui.detailId);
+  if (!d) { ui.detailId = null; box.innerHTML = ''; return; }
+  const lines = dayDetailLines(d, cur().settings);
+  box.innerHTML = '<div class="detail-panel" id="att-detail-panel"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><h3>' + esc(t('dl_title', { date: fmtLong(d.date) })) + '</h3><button type="button" class="btn small" data-act="detail-close">' + t('b_close') + '</button></div><ul>' +
+    lines.map(l => '<li>' + esc(l) + '</li>').join('') + '</ul></div>';
+}
+
+/* ---------- Other deductions / additions ---------- */
+const ADJ = {
+  ded: { key: 'deductions', title: 'adj_ded_h', plural: 'adj_ded_empty', add: 'adj_ded_add', names: 'adj_ded_names', hint: 'adj_ded_hint', total: 'adj_ded_total', sign: -1 },
+  add: { key: 'additions', title: 'adj_add_h', plural: 'adj_add_empty', add: 'adj_add_add', names: 'adj_add_names', hint: 'adj_add_hint', total: 'adj_add_total', sign: 1 }
+};
+function buildAdjust(p) {
+  const cfg = ADJ[p], names = I18N[LANG][cfg.names];
+  $('#' + cfg.key).innerHTML =
+    '<h2 id="' + p + '-title">' + t(cfg.title) + '</h2>' +
+    '<form id="' + p + '-form" novalidate autocomplete="off">' +
+      '<div class="grid">' +
+        '<div class="field span-all"><label for="' + p + '-name">' + t('f_name') + '</label><input id="' + p + '-name" list="' + p + '-names" maxlength="60" placeholder="' + esc(names[0]) + '"><datalist id="' + p + '-names">' + names.map(n => '<option value="' + esc(n) + '">').join('') + '</datalist></div>' +
+        '<div class="field"><label for="' + p + '-amount" data-cur-i18n="f_amount"></label><input id="' + p + '-amount" type="number" inputmode="decimal" step="any" min="0"></div>' +
+        '<div class="field"><label for="' + p + '-date">' + t('f_date') + '</label><input id="' + p + '-date" type="date"></div>' +
+        '<div class="field span-all"><label for="' + p + '-note">' + t('f_note') + '</label><input id="' + p + '-note" maxlength="200"></div>' +
+      '</div>' +
+      '<p class="hint" style="margin-top:8px">' + t(cfg.hint) + '</p>' +
+      '<div class="msg error" id="' + p + '-error" role="alert" hidden></div>' +
+      '<div class="actions"><button type="submit" class="btn primary" id="' + p + '-submit">' + t(cfg.add) + '</button><button type="button" class="btn" id="' + p + '-cancel" hidden>' + t('btn_cancel_edit') + '</button></div>' +
+    '</form>' +
+    '<div id="' + p + '-list" style="margin-top:16px"></div>';
+}
+function renderAdjust(p) {
+  const cfg = ADJ[p], md = cur(), c = md.settings.currency, box = $('#' + p + '-list');
+  const items = md[cfg.key].slice().sort((a, b) => (a.date || '') < (b.date || '') ? -1 : (a.date || '') > (b.date || '') ? 1 : 0);
+  if (!items.length) { box.innerHTML = '<p class="empty">' + t(cfg.plural) + '</p>'; return; }
+  const total = round2(items.reduce((a, x) => a + x.amount, 0));
+  box.innerHTML = '<div class="table-wrap" role="region" aria-label="' + esc(t(cfg.title)) + '" tabindex="0"><table class="adj"><thead><tr><th>' + t('f_name') + '</th><th>' + t('th_date') + '</th><th class="num">' + t('th_amount') + '</th><th>' + t('th_actions') + '</th></tr></thead><tbody>' +
+    items.map(x => '<tr><td>' + bdi(x.name) + (x.note ? '<span class="sub">' + bdi(x.note) + '</span>' : '') + '</td><td>' + (x.date ? esc(fmtShort(x.date)) : '\u2013') + '</td><td class="num ' + (cfg.sign < 0 ? 'neg' : 'pos') + '">' + ltr((cfg.sign < 0 ? MINUS : '+') + nf2.format(x.amount)) + '</td>' +
+      '<td class="act"><button type="button" class="btn small" data-adj="' + p + '" data-act="edit" data-id="' + x.id + '">' + t('b_edit') + '</button> <button type="button" class="btn small danger" data-adj="' + p + '" data-act="del" data-id="' + x.id + '">' + t('b_delete') + '</button></td></tr>').join('') +
+    '</tbody><tfoot><tr><td colspan="2"><strong>' + t(cfg.total) + '</strong></td><td class="num"><strong>' + money(total, c) + '</strong></td><td></td></tr></tfoot></table></div>';
+}
+
+/* ---------- Expenses (additive feature — independent of the salary Calc engine) ---------- */
+const EXPENSE_CATEGORY_KEYS = ['food', 'drinks', 'transport', 'bills', 'phone', 'internet', 'shopping', 'medicine', 'household', 'entertainment', 'other'];
+const categoryLabel = cat => EXPENSE_CATEGORY_KEYS.indexOf(cat) >= 0 ? t('cat_' + cat) : cat;
+function categoryOptionsHTML(includeCustomAction) {
+  let html = EXPENSE_CATEGORY_KEYS.map(k => '<option value="' + k + '">' + esc(t('cat_' + k)) + '</option>').join('');
+  const customs = (state.customCategories || []).slice().sort((a, b) => a.localeCompare(b));
+  if (customs.length) html += customs.map(c => '<option value="' + esc(c) + '">' + esc(c) + '</option>').join('');
+  if (includeCustomAction) html += '<option value="__custom__">' + esc(t('exp_add_category')) + '</option>';
+  return html;
+}
+function buildExpenseForm() {
+  const prevCat = $('#exp-category') ? $('#exp-category').value : '';
+  $('#exp-category').innerHTML = categoryOptionsHTML(true);
+  if (prevCat) $('#exp-category').value = prevCat;
+  $('#exp-filter-cat').innerHTML = '<option value="">' + esc(t('exp_filter_all')) + '</option>' + categoryOptionsHTML(false);
+  $('#exp-filter-cat').value = ui.expFilter.category;
+}
+/* Totals and per-category breakdown for one month. Reads only md.expenses — never touches Calc or M/R. */
+function computeExpenses(md) {
+  const items = md.expenses.slice().sort((a, b) => (a.date || '') < (b.date || '') ? -1 : (a.date || '') > (b.date || '') ? 1 : 0);
+  const total = round2(items.reduce((a, x) => a + x.amount, 0));
+  const byCategory = {};
+  items.forEach(x => { byCategory[x.category] = round2((byCategory[x.category] || 0) + x.amount); });
+  return { items: items, total: total, count: items.length, byCategory: byCategory };
+}
+function defaultExpenseDate() {
+  const y = state.selected.y, m = state.selected.m, tt = todayISO();
+  return (tt >= isoDate(y, m, 1) && tt <= isoDate(y, m, daysInMonth(y, m))) ? tt : isoDate(y, m, 1);
+}
+function resetExpenseForm() {
+  ui.editing.exp = null;
+  $('#exp-amount').value = ''; $('#exp-date').value = defaultExpenseDate();
+  if ($('#exp-category').options.length) $('#exp-category').selectedIndex = 0;
+  $('#exp-custom-wrap').hidden = true; $('#exp-custom').value = '';
+  $('#exp-note').value = '';
+  $('#exp-submit').textContent = t('btn_add');
+  $('#exp-cancel').hidden = true;
+  $('#exp-title').textContent = t('exp_add_h');
+  const e = $('#exp-error'); e.hidden = true; e.textContent = '';
+}
+function resetExpenseFilterUI() {
+  ui.expFilter = { category: '', from: '', to: '' };
+  $('#exp-filter-cat').value = ''; $('#exp-filter-from').value = ''; $('#exp-filter-to').value = '';
+}
+function onExpenseCategoryChange() { $('#exp-custom-wrap').hidden = $('#exp-category').value !== '__custom__'; }
+function onExpenseSubmit(e) {
+  e.preventDefault();
+  const md = cur();
+  const amountEl = $('#exp-amount');
+  const amount = (amountEl.value === '' || amountEl.validity.badInput) ? NaN : amountEl.valueAsNumber;
+  const date = $('#exp-date').value;
+  let category = $('#exp-category').value;
+  const custom = $('#exp-custom').value.trim();
+  const note = $('#exp-note').value.trim();
+  const errors = [];
+  if (!isNum(amount)) errors.push(t('a_err_amount'));
+  else if (amount <= 0) errors.push(t('a_err_positive'));
+  else if (amount > 1e9) errors.push(t('a_err_big'));
+  if (!parseISO(date)) errors.push(t('a_err_date'));
+  if (!category) errors.push(t('exp_err_category'));
+  else if (category === '__custom__') {
+    if (!custom) errors.push(t('exp_err_custom'));
+    else if (custom.length > 40) errors.push(t('exp_err_custom_big'));
+  }
+  const box = $('#exp-error');
+  if (errors.length) { box.hidden = false; box.textContent = errors.join(' '); return; }
+  if (category === '__custom__') {
+    category = custom.slice(0, 40);
+    if (state.customCategories.indexOf(category) < 0) { state.customCategories.push(category); state.customCategories.sort(); }
+  }
+  const item = { id: ui.editing.exp || uid(), date: date, category: category, amount: amount, note: note.slice(0, 200) };
+  const i = ui.editing.exp ? md.expenses.findIndex(x => x.id === ui.editing.exp) : -1;
+  if (i >= 0) md.expenses[i] = item; else md.expenses.push(item);
+  save();
+  buildExpenseForm();
+  resetExpenseForm();
+  renderExpenses();
+  $('#exp-amount').focus();
+}
+function startEditExpense(id) {
+  const x = cur().expenses.find(i => i.id === id);
+  if (!x) return;
+  ui.editing.exp = id;
+  const known = EXPENSE_CATEGORY_KEYS.indexOf(x.category) >= 0 || (state.customCategories || []).indexOf(x.category) >= 0;
+  if (!known) { state.customCategories.push(x.category); state.customCategories.sort(); buildExpenseForm(); }
+  $('#exp-amount').value = x.amount; $('#exp-date').value = x.date; $('#exp-category').value = x.category;
+  $('#exp-custom-wrap').hidden = true; $('#exp-custom').value = '';
+  $('#exp-note').value = x.note || '';
+  $('#exp-submit').textContent = t('btn_save');
+  $('#exp-cancel').hidden = false;
+  $('#exp-title').textContent = t('exp_edit_h');
+  $('#expenses').scrollIntoView({ block: 'start' });
+}
+function filteredExpenses(list) {
+  return list.filter(x => (!ui.expFilter.category || x.category === ui.expFilter.category) && (!ui.expFilter.from || x.date >= ui.expFilter.from) && (!ui.expFilter.to || x.date <= ui.expFilter.to));
+}
+function renderExpenseSummary(ex) {
+  const md = cur(), c = md.settings.currency, box = $('#exp-summary');
+  const cats = Object.keys(ex.byCategory).sort((a, b) => ex.byCategory[b] - ex.byCategory[a]);
+  let html = '<dl class="ledger single">' +
+    '<div class="row"><dt>' + t('exp_total') + '</dt><dd>' + money(ex.total, c) + '</dd></div>' +
+    '<div class="row"><dt>' + t('exp_count') + '</dt><dd>' + pl('expense', ex.count) + '</dd></div></dl>';
+  if (cats.length) {
+    html += '<h3 style="margin-top:16px">' + t('exp_by_cat_h') + '</h3><div class="cat-bars">' +
+      cats.map(k => {
+        const amt = ex.byCategory[k], pct = ex.total > 0 ? Math.round((amt / ex.total) * 100) : 0;
+        return '<div class="cat-bar-row"><div class="cat-bar-top"><span>' + bdi(categoryLabel(k)) + '</span><span class="num">' + money(amt, c) + ' \u00b7 ' + ltr(pct + '%') + '</span></div>' +
+          '<div class="cat-bar-track"><div class="cat-bar-fill" style="width:' + pct + '%"></div></div></div>';
+      }).join('') + '</div>';
+  }
+  html += '<h3 style="margin-top:16px">' + t('exp_vs_salary_h') + '</h3>';
+  if (md.actualReceived == null) {
+    html += '<p class="hint">' + esc(t('exp_need_actual')) + ' <button type="button" class="linkbtn" data-goto="actual">' + t('sum_enter_link') + '</button></p>';
+  } else {
+    const remaining = round2(md.actualReceived - ex.total);
+    html += '<dl class="ledger single">' +
+      '<div class="row"><dt>' + t('exp_salary_received') + '</dt><dd>' + money(md.actualReceived, c) + '</dd></div>' +
+      '<div class="row"><dt>' + t('exp_total_label') + '</dt><dd class="neg">' + negMoney(ex.total, c) + '</dd></div>' +
+      '<div class="row total"><dt>' + t('exp_remaining') + '</dt><dd class="' + (remaining < 0 ? 'neg' : '') + '">' + money(remaining, c) + '</dd></div></dl>';
+  }
+  box.innerHTML = html;
+}
+function renderExpenseTable(ex) {
+  const c = cur().settings.currency, box = $('#exp-table');
+  const list = filteredExpenses(ex.items);
+  const filterActive = ui.expFilter.category || ui.expFilter.from || ui.expFilter.to;
+  let head = '';
+  if (filterActive) {
+    const ftotal = round2(list.reduce((a, x) => a + x.amount, 0));
+    head = '<p class="hint">' + esc(t('exp_filtered_line', { n: pl('expense', list.length), amt: money(ftotal, c) })) + '</p>';
+  }
+  if (!list.length) { box.innerHTML = head + '<p class="empty">' + t(filterActive ? 'exp_empty_filtered' : 'exp_empty') + '</p>'; return; }
+  box.innerHTML = head + '<div class="table-wrap" role="region" aria-label="' + esc(t('exp_list_h')) + '" tabindex="0"><table class="exp"><thead><tr><th>' + t('th_date') + '</th><th>' + t('exp_category') + '</th><th>' + t('exp_th_note') + '</th><th class="num">' + t('th_amount') + '</th><th>' + t('th_actions') + '</th></tr></thead><tbody>' +
+    list.map(x => '<tr><td>' + esc(fmtShort(x.date)) + '</td><td>' + bdi(categoryLabel(x.category)) + '</td><td>' + (x.note ? bdi(x.note) : '\u2013') + '</td><td class="num">' + money(x.amount, c) + '</td>' +
+      '<td class="act"><button type="button" class="btn small" data-exp-act="edit" data-id="' + x.id + '">' + t('b_edit') + '</button> <button type="button" class="btn small danger" data-exp-act="del" data-id="' + x.id + '">' + t('b_delete') + '</button></td></tr>').join('') +
+    '</tbody></table></div>';
+}
+function renderExpenses() {
+  const ex = computeExpenses(cur());
+  renderExpenseSummary(ex);
+  renderExpenseTable(ex);
+}
+function openExpensesOverlay() {
+  $('#expenses-overlay').hidden = false;
+  document.body.classList.add('expenses-open');
+  $('#expenses-overlay').scrollTop = 0;
+}
+function closeExpensesOverlay() {
+  $('#expenses-overlay').hidden = true;
+  document.body.classList.remove('expenses-open');
+}
+
+/* ---------- Actual salary, reconciliation, breakdown ---------- */
+function reasonText(x) { return x.key === 'missing' ? t('r_missing', { n: pl('workday', x.n) }) : t(x.k); }
+function renderActual() {
+  const c = cur().settings.currency, box = $('#actual-result');
+  if (!R) { box.innerHTML = '<p class="hint" style="margin-top:12px">' + esc(t('act_prompt', { amt: money(M.expectedNet, c) })) + '</p>'; return; }
+  const badge = R.state === 'under' ? '<span class="badge under">' + t('b_under') + '</span>' : R.state === 'over' ? '<span class="badge over">' + t('b_over') + '</span>' : '<span class="badge match">' + t('b_match') + '</span>';
+  let html = '<dl class="ledger single" style="margin-top:12px"><div class="row"><dt>' + t('act_expected') + '</dt><dd>' + money(R.expected, c) + '</dd></div>' +
+    '<div class="row"><dt>' + t('act_actual') + '</dt><dd>' + money(R.actual, c) + '</dd></div>' +
+    '<div class="row total"><dt>' + t('l_difference') + ' ' + badge + '</dt><dd class="' + (R.state === 'under' ? 'neg' : R.state === 'over' ? 'pos' : '') + '">' + signedMoney(R.diff, c) + '</dd></div></dl>';
+  if (R.state === 'match') html += '<p class="verdict">' + t('act_match') + '</p>';
+  else {
+    html += '<p class="verdict">' + esc(t(R.state === 'under' ? 'act_less' : 'act_more', { amt: money(Math.abs(R.diff), c) })) + '</p>';
+    if (R.items.length) {
+      html += '<h3>' + t('act_possible') + '</h3><dl class="ledger single">' +
+        R.items.map(x => '<div class="row"><dt>' + esc(reasonText(x)) + '<span class="formula">' + t(x.used ? 'act_counted' : 'act_not_counted') + '</span></dt><dd class="' + (x.amount < 0 ? 'neg' : 'pos') + '">' + signedMoney(x.amount, c) + '</dd></div>').join('') +
+        '</dl><p class="hint" style="margin-top:8px">' + t('act_possible_hint') + '</p>';
+    } else html += '<p class="hint">' + t('act_nothing') + '</p>';
+    html += '<p class="verdict" style="margin-top:8px">' + esc(Math.abs(R.unexplained) < 0.005 ? t('act_unexpl_zero', { amt: money(0, c) }) : t('act_unexpl', { amt: money(Math.abs(R.unexplained), c) })) + '</p>';
+  }
+  box.innerHTML = html;
+}
+function renderRecon() {
+  const c = cur().settings.currency, box = $('#recon');
+  const row = (l, v, cls) => '<div class="row ' + (cls || '') + '"><dt>' + l + '</dt><dd>' + v + '</dd></div>';
+  let html = '<h3>' + t('rc_expected_h') + '</h3><dl class="ledger single">' +
+    row(t('rc_base'), money(M.base, c)) +
+    (M.projectedAdd > 0.004 ? row(t('rc_remaining', { n: M.unrecorded + M.future }), money(M.projectedAdd, c)) : '') +
+    row(t('rc_gross'), '<strong>' + money(M.expectedGross, c) + '</strong>', 'sep') +
+    row(t('rc_less_late'), negHtml(M.lateDed, c), 'sub') +
+    row(t('rc_less_other'), negHtml(M.otherDed, c), 'sub') +
+    row(t('rc_plus_ot'), posHtml(M.otPay, c), 'sub') +
+    row(t('rc_plus_add'), posHtml(M.otherAdd, c), 'sub') +
+    '<div class="row total"><dt>' + t('rc_net') + '</dt><dd>' + money(M.expectedNet, c) + '</dd></div></dl>';
+  html += '<h3 style="margin-top:24px">' + t('rc_compare_h') + '</h3>';
+  if (!R) html += '<p class="hint">' + t('rc_enter') + '</p>';
+  else {
+    const cls = R.state === 'under' ? 'neg' : R.state === 'over' ? 'pos' : '';
+    html += '<dl class="ledger single">' + row(t('rc_expected'), money(R.expected, c)) + row(t('rc_actual'), money(R.actual, c)) +
+      row(t('l_difference'), '<span class="' + cls + '">' + signedMoney(R.diff, c) + '</span>') +
+      row(t('rc_explained'), signedMoney(R.explained, c), 'sub') +
+      '<div class="row total"><dt>' + t('rc_unexplained') + '</dt><dd>' + signedMoney(R.unexplained, c) + '</dd></div></dl>' +
+      '<p class="hint" style="margin-top:8px">' + t('rc_hint') + '</p>';
+  }
+  box.innerHTML = html;
+}
+function methodText(s) {
+  switch (s.lateMethod) {
+    case 'per_minute': return t('m_per_minute', { rate: trimNum(s.lateRate) });
+    case 'per_minute_fixed': return t('m_fixed', { amt: money(s.lateRate, s.currency) });
+    case 'per_hour': return t('m_hour', { rate: trimNum(s.lateRate) });
+    case 'daily': return t('m_daily', { rate: trimNum(s.lateRate) });
+    default: return t('m_custom', { n: s.lateTiers.length });
+  }
+}
+function renderBreakdown() {
+  const s = cur().settings, c = s.currency, r = M.rates, T = M.totals, X = t('op_mul'), D = t('op_div');
+  $('#calc-line').textContent = t('calc_line', { amt: money(M.earnedNet, c) });
+  const row = (a, b, v, cls) => '<div class="row"><dt>' + a + '<span class="formula">' + b + '</span></dt><dd class="' + (cls || '') + '">' + v + '</dd></div>';
+  const rem = M.unrecorded + M.future;
+  const rows = [
+    row(t('l_monthly'), t('bd_from_settings'), money(s.monthlySalary, c)),
+    row(t('bd_workdays'), t('bd_from_settings'), String(s.workingDays)),
+    row(t('bd_daily'), ltr(money(s.monthlySalary) + ' ' + D + ' ' + s.workingDays), money(r.daily, c)),
+    row(t('bd_hours'), t('bd_from_settings'), trimNum(s.hoursPerDay)),
+    row(t('bd_hourly'), ltr(money(r.daily) + ' ' + D + ' ' + trimNum(s.hoursPerDay)), money(r.hourly, c)),
+    row(t('l_days_worked'), t('bd_days_worked_how'), String(T.daysWorked)),
+    row(t('bd_paid_days'), t('bd_paid_how') + (s.holidaysPaid ? t('bd_paid_hol') : '') + (s.leavePaid ? t('bd_paid_leave') : ''), String(T.paidDays)),
+    row(t('l_base'), ltr(T.paidDays + ' ' + X + ' ' + money(r.daily)) + (M.baseCapped ? t('bd_limited') : ''), money(M.base, c)),
+    row(t('bd_late'), t('bd_late_how', { days: pl('lateday', T.lateDays), mins: T.lateMin, method: methodText(s) }), negMoney(M.lateDed, c), M.lateDed > 0.004 ? 'neg' : ''),
+    row(t('bd_overtime'), ltr((T.otMin / 60).toFixed(2) + ' ' + t('u_hours') + ' ' + X + ' ' + money(r.hourly) + ' ' + X + ' ' + trimNum(s.otMultiplier)), M.otPay > 0.004 ? signedMoney(M.otPay, c) : money(0, c), M.otPay > 0.004 ? 'pos' : ''),
+    row(t('l_other_ded'), pl('entry', cur().deductions.length), negMoney(M.otherDed, c), M.otherDed > 0.004 ? 'neg' : ''),
+    row(t('l_other_add'), pl('entry', cur().additions.length), M.otherAdd > 0.004 ? signedMoney(M.otherAdd, c) : money(0, c), M.otherAdd > 0.004 ? 'pos' : ''),
+    row('<strong>' + t('bd_net_so_far') + '</strong>', t('bd_net_how'), '<strong>' + money(M.earnedNet, c) + '</strong>'),
+    row(t('bd_remaining'), ltr(rem + ' ' + X + ' ' + money(r.daily)) + ' ' + t('bd_assume') + (M.projectedAdd < rem * r.daily - 0.005 ? t('bd_limited') : ''), money(M.projectedAdd, c)),
+    row('<strong>' + t('sum_expected') + '</strong>', t('bd_expected_how'), '<strong>' + money(M.expectedNet, c) + '</strong>')
+  ].join('');
+  const rules = [
+    t('rule_grace', { g: s.graceMinutes }) + ' ' + t(s.graceMode === 'full' ? 'rule_grace_full' : 'rule_grace_excess'),
+    t(s.otBasis === 'after_end' ? 'rule_ot_end' : 'rule_ot_hours', { end: s.endTime, h: trimNum(s.hoursPerDay), mult: trimNum(s.otMultiplier) }) + (s.otMinMinutes > 0 ? t('rule_ot_from', { m: s.otMinMinutes }) : '.'),
+    s.weekendDays.length ? t(s.weekendWorking ? 'rule_weekend_work' : 'rule_weekend_ot', { list: s.weekendDays.map(w => dayShort(w)).join(t('list_sep')) }) : t('rule_weekend_none'),
+    t(s.holidaysPaid ? 'rule_hol_paid' : 'rule_hol_unpaid') + ' ' + t(s.leavePaid ? 'rule_leave_paid' : 'rule_leave_unpaid'),
+    t('rule_caps'),
+    t('rule_precision')
+  ];
+  $('#calc-body').innerHTML = '<dl class="ledger">' + rows + '</dl>' +
+    '<h3 style="margin-top:16px">' + t('rules_h') + '</h3><ul class="rules">' + rules.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>' +
+    '<p class="hint" style="margin-top:8px">' + t('calc_foot') + '</p>';
+}
+
+/* ---------- Saved months and storage status ---------- */
+function renderSavedMonths() {
+  const box = $('#saved-months');
+  const keys = Object.keys(state.months).filter(k => monthHasData(state.months[k])).sort().reverse();
+  if (!keys.length) { box.innerHTML = '<p class="empty">' + t('sm_empty') + '</p>'; return; }
+  box.innerHTML = '<dl class="ledger single">' + keys.map(k => {
+    const y = +k.slice(0, 4), m0 = +k.slice(5) - 1, md = state.months[k];
+    const mc = Calc.computeMonth(md, y, m0, todayISO()), c = md.settings.currency;
+    let sub = t('sm_line', { recs: pl('rec', md.records.length), net: money(mc.earnedNet, c) });
+    if (md.actualReceived != null) sub += t('sm_recv', { amt: money(md.actualReceived, c) });
+    return '<div class="row"><dt>' + esc(monthName(m0)) + ' ' + y + (k === curKey() ? ' <span class="tag">' + t('sm_current') + '</span>' : '') + '<span class="formula">' + sub + '</span></dt>' +
+      '<dd><button type="button" class="btn small" data-open-month="' + k + '">' + t('sm_open') + '</button></dd></div>';
+  }).join('') + '</dl>';
+}
+function renderDataStatus() {
+  const lb = state.lastBackup ? fmtLong(localDateOf(state.lastBackup)) : t('ds_never');
+  const pr = persisted === true ? t('ds_yes') : persisted === false ? t('ds_no') : t('ds_unknown');
+  $('#data-status').innerHTML = '<div>' + t('ds_saved') + '</div><div>' + esc(t('ds_last', { d: lb })) + '</div><div>' + t('ds_persist', { v: pr }) + '</div>';
+}
+async function requestPersist() {
+  try {
+    if (navigator.storage && navigator.storage.persisted) {
+      persisted = await navigator.storage.persisted();
+      if (!persisted && navigator.storage.persist) persisted = await navigator.storage.persist();
+    }
+  } catch (e) { /* not supported */ }
+  if (state) renderDataStatus();
+}
+
+/* =====================================================================
+   SETTINGS FORM
+   ===================================================================== */
+function fNum(key, label, attrs, hint) {
+  return '<div class="field"><label for="s-' + key + '">' + label + '</label><input id="s-' + key + '" data-setting="' + key + '" data-kind="number" type="number" inputmode="decimal" step="any" ' + (attrs || '') + '><div class="err" data-err="' + key + '" role="alert"></div>' + (hint ? '<div class="hint" data-hint="' + key + '">' + hint + '</div>' : '') + '</div>';
+}
+function fSel(key, label, opts) {
+  return '<div class="field span-m"><label for="s-' + key + '">' + label + '</label><select id="s-' + key + '" data-setting="' + key + '" data-kind="select">' + opts.map(o => '<option value="' + o[0] + '">' + esc(o[1]) + '</option>').join('') + '</select><div class="err" data-err="' + key + '" role="alert"></div></div>';
+}
+function fCheck(key, label) {
+  return '<div><label class="check"><input type="checkbox" id="s-' + key + '" data-setting="' + key + '" data-kind="checkbox"><span>' + label + '</span></label><div class="err" data-err="' + key + '" role="alert"></div></div>';
+}
+function buildSettings() {
+  $('#settings-body').innerHTML =
+    '<p class="hint">' + t('set_hint') + '</p>' +
+    '<div class="field" style="max-width:420px;margin-bottom:4px"><label for="emp-name">' + t('emp_name') + '</label><input id="emp-name" maxlength="60" autocomplete="name"></div>' +
+    '<h3>' + t('set_pay') + '</h3><div class="grid c4">' +
+      fNum('monthlySalary', t('set_salary'), 'min="0"') +
+      '<div class="field"><label for="s-currency">' + t('set_currency') + '</label><input id="s-currency" data-setting="currency" data-kind="text" maxlength="8" autocapitalize="characters" dir="ltr"><div class="err" data-err="currency" role="alert"></div></div>' +
+      fNum('workingDays', t('set_workdays'), 'min="1" max="31" step="1"') +
+      fNum('hoursPerDay', t('set_hours'), 'min="0.5" max="24"') +
+    '</div>' +
+    '<h3>' + t('set_schedule') + '</h3><div class="grid c4">' +
+      '<div class="field"><label for="s-startTime">' + t('set_start') + '</label><input id="s-startTime" data-setting="startTime" data-kind="time" type="time"><div class="err" data-err="startTime" role="alert"></div></div>' +
+      '<div class="field"><label for="s-endTime">' + t('set_end') + '</label><input id="s-endTime" data-setting="endTime" data-kind="time" type="time"><div class="err" data-err="endTime" role="alert"></div></div>' +
+      fNum('graceMinutes', t('set_grace'), 'min="0" max="480" step="1"') +
+      fSel('graceMode', t('set_grace_mode'), [['excess', t('set_grace_excess')], ['full', t('set_grace_full')]]) +
+    '</div>' +
+    fCheck('allowOvernight', t('set_overnight')) +
+    '<h3>' + t('set_late_h') + '</h3><div class="grid c3">' +
+      fSel('lateMethod', t('set_late_method'), LATE_METHOD_KEYS.map(k => [k, t('lm_' + k)])) +
+      '<div class="field" id="rate-field"><label for="s-lateRate" id="rate-label"></label><input id="s-lateRate" data-setting="lateRate" data-kind="number" type="number" inputmode="decimal" step="any" min="0"><div class="err" data-err="lateRate" role="alert"></div><div class="hint" id="rate-hint"></div></div>' +
+    '</div>' +
+    '<div id="tiers-box" hidden style="margin-top:12px">' +
+      '<div class="grid"><div class="field"><label for="s-lateTierUnit">' + t('tier_unit') + '</label><select id="s-lateTierUnit" data-setting="lateTierUnit" data-kind="select"><option value="days">' + esc(t('tier_unit_days')) + '</option><option value="amount">' + esc(t('tier_unit_amount')) + '</option></select></div></div>' +
+      '<p class="hint" style="margin-top:8px">' + t('tier_hint') + '</p>' +
+      '<div id="tiers-list"></div><div class="err" id="tiers-err" role="alert"></div>' +
+      '<button type="button" class="btn small" id="tier-add">' + t('tier_add') + '</button>' +
+    '</div>' +
+    '<h3>' + t('set_ot_h') + '</h3><div class="grid c3">' +
+      fSel('otBasis', t('set_ot_basis'), [['after_end', t('set_ot_after_end')], ['beyond_hours', t('set_ot_beyond')]]) +
+      '<div class="field"><label for="s-otMultiplier">' + t('set_ot_mult') + '</label><input id="s-otMultiplier" data-setting="otMultiplier" data-kind="number" type="number" inputmode="decimal" step="any" min="0" max="10"><div class="err" data-err="otMultiplier" role="alert"></div>' +
+        '<div class="chips" style="gap:6px;margin-top:4px">' + ['1', '1.25', '1.5', '2'].map(v => '<button type="button" class="btn small" data-ot="' + v + '">' + v + 'x</button>').join('') + '</div></div>' +
+      fNum('otMinMinutes', t('set_ot_min'), 'min="0" max="480" step="1"') +
+    '</div>' +
+    '<h3>' + t('set_days_h') + '</h3>' +
+    '<div class="label" style="margin-bottom:6px">' + t('set_weekend') + '</div><div class="chips" id="weekend-chips">' +
+      [0, 1, 2, 3, 4, 5, 6].map(i => '<label class="chip"><input type="checkbox" data-weekday="' + i + '"><span>' + esc(dayShort(i)) + '</span></label>').join('') + '</div>' +
+    '<div class="hint" style="margin-top:6px">' + t('set_weekend_hint') + '</div>' +
+    fCheck('weekendWorking', t('set_weekend_working')) +
+    '<p class="hint" style="margin:-4px 0 4px">' + t('set_weekend_working_hint') + '</p>' +
+    fCheck('holidaysPaid', t('set_hol_paid')) +
+    fCheck('leavePaid', t('set_leave_paid'));
+}
+function fillSettings() {
+  const s = cur().settings;
+  $$('[data-setting]').forEach(el => {
+    const k = el.dataset.setting;
+    if (el.dataset.kind === 'checkbox') el.checked = !!s[k]; else el.value = s[k];
+    el.removeAttribute('aria-invalid');
+  });
+  $$('[data-err]').forEach(e => { e.textContent = ''; });
+  $$('[data-weekday]').forEach(el => { el.checked = s.weekendDays.indexOf(+el.dataset.weekday) >= 0; });
+  $('#emp-name').value = state.profile.name || '';
+  refreshLateUI();
+  refreshOtPresets();
+  renderTiers();
+}
+function refreshLateUI() {
+  const s = cur().settings, m = s.lateMethod;
+  const cfg = {
+    per_minute: [t('rate_mult'), t('rate_hint_minute')],
+    per_minute_fixed: [t('rate_fixed', { cur: curL(s.currency) }), t('rate_hint_fixed')],
+    per_hour: [t('rate_mult'), t('rate_hint_hour')],
+    daily: [t('rate_daily'), t('rate_hint_daily')],
+    custom: ['', '']
+  }[m];
+  $('#rate-field').hidden = m === 'custom';
+  $('#tiers-box').hidden = m !== 'custom';
+  $('#rate-label').textContent = cfg[0];
+  $('#rate-hint').textContent = cfg[1];
+}
+function refreshOtPresets() {
+  const v = cur().settings.otMultiplier;
+  $$('[data-ot]').forEach(b => b.classList.toggle('active', Math.abs(parseFloat(b.dataset.ot) - v) < 1e-9));
+}
+function renderTiers() {
+  const s = cur().settings, box = $('#tiers-list');
+  const unit = s.lateTierUnit === 'days' ? t('tier_days_word') : curL(s.currency);
+  box.innerHTML = s.lateTiers.map((x, i) =>
+    '<div class="tier-row"><div class="field"><label for="tier-from-' + i + '">' + t('tier_from') + '</label><input id="tier-from-' + i + '" type="number" inputmode="numeric" step="1" min="0" data-tier="from" data-i="' + i + '" value="' + x.from + '"></div>' +
+    '<div class="field"><label for="tier-val-' + i + '">' + esc(t('tier_deduct', { unit: unit })) + '</label><input id="tier-val-' + i + '" type="number" inputmode="decimal" step="any" min="0" data-tier="value" data-i="' + i + '" value="' + x.value + '"></div>' +
+    '<button type="button" class="btn small danger" data-tier-remove="' + i + '">' + t('b_remove') + '</button></div>').join('') +
+    (s.lateTiers.length ? '' : '<p class="empty">' + t('tier_none') + '</p>');
+  $('#s-lateTierUnit').value = s.lateTierUnit;
+}
+function restoreField(key) {
+  const el = $('[data-setting="' + key + '"]'), s = cur().settings;
+  if (!el) return;
+  if (el.dataset.kind === 'checkbox') el.checked = !!s[key]; else el.value = s[key];
+  el.removeAttribute('aria-invalid');
+}
+function onSettingEvent(e) {
+  const el = e.target, key = el.dataset && el.dataset.setting;
+  if (!key) return;
+  const s = cur().settings, kind = el.dataset.kind, errEl = $('[data-err="' + key + '"]') || document.createElement('div');
+  let val;
+  if (kind === 'number') val = (el.value === '' || (el.validity && el.validity.badInput)) ? NaN : el.valueAsNumber;
+  else if (kind === 'checkbox') val = el.checked;
+  else val = el.value;
+  if (kind === 'text') val = val.trim();
+  const cand = Object.assign({}, s, { [key]: val });
+  const err = validateSetting(key, val, cand);
+  if (err) {
+    if (e.type === 'change') { restoreField(key); errEl.textContent = errText(err) + ' ' + t('v_restored'); }
+    else { errEl.textContent = errText(err); el.setAttribute('aria-invalid', 'true'); }
+    return;
+  }
+  el.removeAttribute('aria-invalid');
+  errEl.textContent = '';
+  s[key] = val;
+  if (key === 'lateMethod') {
+    s.lateRate = val === 'daily' ? 0.25 : 1;
+    $('#s-lateRate').value = s.lateRate;
+    $('[data-err="lateRate"]').textContent = '';
+    refreshLateUI();
+  }
+  if (key === 'otMultiplier') refreshOtPresets();
+  if (key === 'currency' || key === 'lateTierUnit') { refreshLateUI(); renderTiers(); }
+  save();
+  renderCalculated();
+}
+function onTierEvent(e) {
+  const el = e.target, s = cur().settings;
+  if (el.dataset.tier === undefined) return;
+  const i = +el.dataset.i, f = el.dataset.tier, errEl = $('#tiers-err');
+  const v = (el.value === '' || (el.validity && el.validity.badInput)) ? NaN : el.valueAsNumber;
+  const ok = isNum(v) && v >= 0 && (f === 'value' ? v <= 1e6 : (v <= 1440 && Number.isInteger(v)));
+  if (!ok) {
+    errEl.textContent = t(f === 'from' ? 'tier_err_from' : 'tier_err_value');
+    el.setAttribute('aria-invalid', 'true');
+    if (e.type === 'change') { el.value = s.lateTiers[i][f]; el.removeAttribute('aria-invalid'); }
+    return;
+  }
+  el.removeAttribute('aria-invalid'); errEl.textContent = '';
+  s.lateTiers[i][f] = v;
+  save(); renderCalculated();
+}
+
+/* =====================================================================
+   ATTENDANCE FORM
+   ===================================================================== */
+function buildStatusSelect() {
+  const sel = $('#att-status'), keep = sel.value || 'auto';
+  sel.innerHTML = STATUS_KEYS.map(k => '<option value="' + k + '">' + esc(statusName(k)) + '</option>').join('');
+  sel.value = keep;
+}
+function buildMonthSelect() {
+  const sel = $('#m-month'), keep = sel.value;
+  sel.innerHTML = I18N[LANG].months.map((n, i) => '<option value="' + i + '">' + esc(n) + '</option>').join('');
+  if (keep !== '') sel.value = keep;
+}
+function readAttForm() {
+  return { date: $('#att-date').value, checkIn: $('#att-in').value, checkOut: $('#att-out').value, status: $('#att-status').value, note: $('#att-memo').value.trim() };
+}
+function syncStatusUI() {
+  const st = $('#att-status').value, off = NON_WORK.indexOf(st) >= 0;
+  $('#att-in').disabled = off; $('#att-out').disabled = off;
+  if (off) { $('#att-in').value = ''; $('#att-out').value = ''; }
+  $('#att-status-hint').textContent = t('sh_' + st);
+}
+function setDateBounds() {
+  const y = state.selected.y, m = state.selected.m;
+  $('#att-date').min = isoDate(y, m, 1);
+  $('#att-date').max = isoDate(y, m, daysInMonth(y, m));
+}
+function suggestDate() {
+  const y = state.selected.y, m = state.selected.m, dim = daysInMonth(y, m), tt = todayISO();
+  const have = {}; cur().records.forEach(r => { have[r.date] = true; });
+  const start = (tt >= isoDate(y, m, 1) && tt <= isoDate(y, m, dim)) ? parseISO(tt).d : 1;
+  for (let d = start; d <= dim; d++) if (!have[isoDate(y, m, d)]) return isoDate(y, m, d);
+  return isoDate(y, m, start);
+}
+function nextFreeAfter(iso) {
+  const p = parseISO(iso), y = state.selected.y, m = state.selected.m, dim = daysInMonth(y, m);
+  const have = {}; cur().records.forEach(r => { have[r.date] = true; });
+  for (let d = p.d + 1; d <= dim; d++) if (!have[isoDate(y, m, d)]) return isoDate(y, m, d);
+  return iso;
+}
+function resetAttForm(dateIso) {
+  ui.editing.att = null;
+  $('#att-date').value = dateIso || suggestDate();
+  $('#att-in').value = ''; $('#att-out').value = ''; $('#att-status').value = 'auto'; $('#att-memo').value = '';
+  $('#att-submit').textContent = t('btn_add');
+  $('#att-cancel').hidden = true;
+  $('#att-title').textContent = t('att_add_h');
+  syncStatusUI();
+  showAttMsg('', '');
+  updateAttPreview();
+}
+function showAttMsg(err, ok) {
+  const e = $('#att-error'), n = $('#att-ok');
+  e.hidden = !err; e.textContent = err || '';
+  n.hidden = !ok; n.textContent = ok || '';
+}
+function validateRecord(rec, excludeId) {
+  const errors = [], md = cur();
+  const p = parseISO(rec.date);
+  if (!rec.date) errors.push(E('e_date_required'));
+  else if (!p) errors.push(E('e_date_invalid'));
+  else if (p.y !== state.selected.y || p.m !== state.selected.m) errors.push(E('e_date_month', { month: monthName(state.selected.m) + ' ' + state.selected.y }));
+  else if (md.records.some(r => r.date === rec.date && r.id !== excludeId)) errors.push(E('e_dup', { date: fmtShort(rec.date) }));
+  if (!errors.length) Calc.computeDay(rec, md.settings).errors.forEach(x => errors.push(x));
+  return errors;
+}
+function updateAttPreview() {
+  const box = $('#att-preview');
+  if (!box) return;
+  const f = readAttForm(), s = cur().settings;
+  if (!f.date || !parseISO(f.date) || NON_WORK.indexOf(f.status) >= 0 || (!f.checkIn && f.status !== 'present')) { box.textContent = ''; return; }
+  const d = Calc.computeDay({ id: 'preview', date: f.date, checkIn: f.checkIn, checkOut: f.checkOut, status: f.status }, s);
+  if (!d.valid) { box.textContent = ''; return; }
+  const parts = [statusName(d.labelKey)];
+  parts.push(d.lateMin > 0 ? t('pv_late', { d: dur(d.lateMin), amt: negMoney(d.lateDed, s.currency) }) : t('pv_no_late'));
+  parts.push(d.otMin > 0 ? t('pv_ot', { d: dur(d.otMin), amt: signedMoney(d.otPay, s.currency) }) : (f.checkOut ? t('pv_no_ot') : t('pv_no_out')));
+  parts.push(t('pv_net', { amt: money(d.net, s.currency) }));
+  box.textContent = t('pv_prefix', { parts: parts.join(t('list_sep')) });
+}
+function onAttSubmit(e) {
+  e.preventDefault();
+  const f = readAttForm(), md = cur(), editingId = ui.editing.att;
+  const rec = { id: editingId || uid(), date: f.date, checkIn: f.checkIn, checkOut: f.checkOut, status: f.status, note: f.note };
+  const errors = validateRecord(rec, editingId);
+  if (errors.length) { showAttMsg(errors.map(errText).join(' '), ''); return; }
+  const d = Calc.computeDay(rec, md.settings);
+  if (editingId) {
+    const i = md.records.findIndex(r => r.id === editingId);
+    if (i >= 0) md.records[i] = rec; else md.records.push(rec);
+  } else md.records.push(rec);
+  md.records.sort((a, b) => a.date < b.date ? -1 : 1);
+  save();
+  const msg = t(editingId ? 'att_saved' : 'att_added', { date: fmtLong(rec.date) }) + (d.warnings.length ? ' ' + errText(d.warnings[0]) : '');
+  const nextDate = editingId ? suggestDate() : nextFreeAfter(rec.date);
+  resetAttForm(nextDate);
+  showAttMsg('', msg);
+  renderCalculated();
+  $('#att-in').focus();
+}
+function startEditAtt(id) {
+  const r = cur().records.find(x => x.id === id);
+  if (!r) return;
+  ui.editing.att = id;
+  $('#att-date').value = r.date; $('#att-status').value = r.status; $('#att-in').value = r.checkIn; $('#att-out').value = r.checkOut; $('#att-memo').value = r.note || '';
+  syncStatusUI();
+  $('#att-submit').textContent = t('btn_save');
+  $('#att-cancel').hidden = false;
+  $('#att-title').textContent = t('att_edit_h', { date: fmtShort(r.date) });
+  showAttMsg('', '');
+  updateAttPreview();
+  $('#quick-add').scrollIntoView({ block: 'start' });
+}
+
+/* =====================================================================
+   OTHER DEDUCTIONS / ADDITIONS FORMS
+   ===================================================================== */
+function defaultAdjDate() {
+  const y = state.selected.y, m = state.selected.m, tt = todayISO();
+  return (tt >= isoDate(y, m, 1) && tt <= isoDate(y, m, daysInMonth(y, m))) ? tt : isoDate(y, m, 1);
+}
+function resetAdjForm(p) {
+  ui.editing[p] = null;
+  $('#' + p + '-name').value = ''; $('#' + p + '-amount').value = ''; $('#' + p + '-note').value = '';
+  $('#' + p + '-date').value = defaultAdjDate();
+  $('#' + p + '-submit').textContent = t(ADJ[p].add);
+  $('#' + p + '-cancel').hidden = true;
+  $('#' + p + '-title').textContent = t(ADJ[p].title);
+  const e = $('#' + p + '-error'); e.hidden = true; e.textContent = '';
+}
+function onAdjSubmit(p, e) {
+  e.preventDefault();
+  const cfg = ADJ[p], md = cur();
+  const name = $('#' + p + '-name').value.trim(), amountEl = $('#' + p + '-amount');
+  const amount = (amountEl.value === '' || amountEl.validity.badInput) ? NaN : amountEl.valueAsNumber;
+  const date = $('#' + p + '-date').value, note = $('#' + p + '-note').value.trim();
+  const errors = [];
+  if (!name) errors.push(t('a_err_name'));
+  if (!isNum(amount)) errors.push(t('a_err_amount'));
+  else if (amount <= 0) errors.push(t('a_err_positive'));
+  else if (amount > 1e9) errors.push(t('a_err_big'));
+  if (!parseISO(date)) errors.push(t('a_err_date'));
+  const box = $('#' + p + '-error');
+  if (errors.length) { box.hidden = false; box.textContent = errors.join(' '); return; }
+  const item = { id: ui.editing[p] || uid(), name: name.slice(0, 60), amount: amount, date: date, note: note.slice(0, 200) };
+  const list = md[cfg.key];
+  const i = ui.editing[p] ? list.findIndex(x => x.id === ui.editing[p]) : -1;
+  if (i >= 0) list[i] = item; else list.push(item);
+  save();
+  resetAdjForm(p);
+  renderCalculated();
+  $('#' + p + '-name').focus();
+}
+function startEditAdj(p, id) {
+  const x = cur()[ADJ[p].key].find(i => i.id === id);
+  if (!x) return;
+  ui.editing[p] = id;
+  $('#' + p + '-name').value = x.name; $('#' + p + '-amount').value = x.amount; $('#' + p + '-date').value = x.date || defaultAdjDate(); $('#' + p + '-note').value = x.note || '';
+  $('#' + p + '-submit').textContent = t('btn_save');
+  $('#' + p + '-cancel').hidden = false;
+  $('#' + p + '-title').textContent = t('adj_edit_h', { name: x.name });
+  $('#' + ADJ[p].key).scrollIntoView({ block: 'start' });
+}
+
+/* =====================================================================
+   ACTUAL SALARY AND MONTH NOTES
+   ===================================================================== */
+function onActualInput(e) {
+  const el = $('#actual-input'), err = $('#actual-error'), md = cur();
+  if (el.value === '' && !(el.validity && el.validity.badInput)) { md.actualReceived = null; err.textContent = ''; el.removeAttribute('aria-invalid'); save(); renderCalculated(); return; }
+  const v = (el.validity && el.validity.badInput) ? NaN : el.valueAsNumber;
+  let msg = '';
+  if (!isNum(v)) msg = t('act_err_num');
+  else if (v < 0) msg = t('act_err_neg');
+  else if (v > 1e9) msg = t('a_err_big');
+  if (msg) {
+    err.textContent = msg; el.setAttribute('aria-invalid', 'true');
+    if (e.type === 'change') { el.value = md.actualReceived == null ? '' : md.actualReceived; el.removeAttribute('aria-invalid'); }
+    return;
+  }
+  err.textContent = ''; el.removeAttribute('aria-invalid');
+  md.actualReceived = v;
+  save(); renderCalculated();
+}
+
+/* =====================================================================
+   MONTH SWITCHING
+   ===================================================================== */
+function setMonth(y, m0) {
+  state.selected = { y: y, m: m0 };
+  ensureMonth(curKey());
+  ui.editing = { att: null, ded: null, add: null };
+  ui.detailId = null;
+  $('#m-month').value = String(m0);
+  $('#m-year').value = String(y);
+  $('#m-error').textContent = '';
+  fillSettings();
+  setDateBounds();
+  resetAttForm();
+  resetAdjForm('ded'); resetAdjForm('add');
+  resetExpenseForm(); resetExpenseFilterUI();
+  const md = cur();
+  $('#actual-input').value = md.actualReceived == null ? '' : md.actualReceived;
+  $('#actual-error').textContent = '';
+  $('#month-notes').value = md.notes || '';
+  save();
+  renderCalculated();
+}
+function shiftMonth(delta) {
+  let y = state.selected.y, m = state.selected.m + delta;
+  while (m < 0) { m += 12; y--; }
+  while (m > 11) { m -= 12; y++; }
+  if (y < 2000 || y > 2100) { $('#m-error').textContent = t('m_err_range'); return; }
+  setMonth(y, m);
+}
+
+/* =====================================================================
+   DATA: export / import / clear
+   ===================================================================== */
+let downloadsCap = null;
+function dataMsg(text, kind) {
+  const el = $('#data-msg');
+  el.hidden = !text; el.textContent = text || '';
+  el.className = 'msg' + (kind ? ' ' + kind : '');
+}
+function exportPayload() {
+  return { app: 'salary-attendance-calculator', version: 1, exportedAt: new Date().toISOString(), data: state };
+}
+async function doExport() {
+  state.lastBackup = new Date().toISOString();
+  save();
+  renderDataStatus();
+  const text = JSON.stringify(exportPayload(), null, 2);
+  const name = 'salary-attendance-backup-' + todayISO() + '.json';
+  $('#backup-text').value = text;
+  if (downloadsCap) {
+    try { await downloadsCap.save({ filename: name, data: text }); dataMsg(t('dm_saved', { name: name }), 'ok'); return; }
+    catch (e) {
+      if (e && e.code === 'declined') { dataMsg(t('dm_cancelled'), ''); return; }
+    }
+  }
+  try {
+    const blob = new Blob([text], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
+    dataMsg(t('dm_created', { name: name }), 'ok');
+  } catch (e) { dataMsg(t('dm_nofile'), 'warn'); }
+  $('#backup-text-box').open = true;
+}
+async function doCopy() {
+  if (!$('#backup-text').value) $('#backup-text').value = JSON.stringify(exportPayload(), null, 2);
+  const ta = $('#backup-text');
+  try { await navigator.clipboard.writeText(ta.value); dataMsg(t('dm_copied'), 'ok'); return; } catch (e) { /* fall through */ }
+  try { ta.focus(); ta.select(); const ok = document.execCommand('copy'); dataMsg(ok ? t('dm_copied') : t('dm_manual'), ok ? 'ok' : 'warn'); }
+  catch (e) { dataMsg(t('dm_manual'), 'warn'); }
+}
+function stageImport(text) {
+  let res;
+  try { res = sanitizeState(JSON.parse(text)); }
+  catch (e) { ui.staged = null; $('#import-confirm').hidden = true; dataMsg(t('dm_invalid'), 'error'); return; }
+  ui.staged = res;
+  const months = Object.keys(res.state.months).length;
+  const recs = Object.keys(res.state.months).reduce((a, k) => a + res.state.months[k].records.length, 0);
+  const box = $('#import-confirm');
+  box.hidden = false;
+  box.innerHTML = '<span>' + esc(t('im_text', { months: pl('month', months), recs: pl('attrec', recs) }) + (res.fixes ? ' ' + t('im_fixes', { items: pl('item', res.fixes) }) : '') + ' ' + t('im_replace')) + '</span>' +
+    '<span class="actions" style="margin:0"><button type="button" class="btn small primary" id="import-go">' + t('im_go') + '</button><button type="button" class="btn small" id="import-cancel">' + t('b_cancel') + '</button></span>';
+  dataMsg('', '');
+}
+function applyImport() {
+  if (!ui.staged) return;
+  state = ui.staged.state; ui.staged = null;
+  $('#import-confirm').hidden = true;
+  updateBanner();
+  setMonth(state.selected.y, state.selected.m);
+  dataMsg(t('dm_imported'), 'ok');
+}
+function updateBanner() { $('#demo-banner').hidden = !state.demo; }
+function armConfirm(btn, labelKey, action) {
+  if (btn.dataset.armed) { clearTimeout(+btn.dataset.timer); delete btn.dataset.armed; btn.classList.remove('armed'); btn.textContent = btn.dataset.label; action(); return; }
+  btn.dataset.label = btn.textContent; btn.dataset.armed = '1'; btn.classList.add('armed'); btn.textContent = t(labelKey);
+  btn.dataset.timer = String(setTimeout(function () { delete btn.dataset.armed; btn.classList.remove('armed'); btn.textContent = btn.dataset.label; }, 4000));
+}
+function clearMonth() {
+  const md = cur();
+  md.records = []; md.deductions = []; md.additions = []; md.actualReceived = null; md.notes = '';
+  save(); setMonth(state.selected.y, state.selected.m);
+  dataMsg(t('dm_cleared', { month: monthName(state.selected.m) + ' ' + state.selected.y }), 'ok');
+}
+function resetAll() {
+  const name = state.profile ? state.profile.name : '';
+  state = defaultState();
+  state.profile.name = name;
+  updateBanner();
+  setMonth(state.selected.y, state.selected.m);
+  dataMsg(t('dm_reset'), 'ok');
+}
+
+/* =====================================================================
+   LANGUAGE SWITCH
+   ===================================================================== */
+function initialLang() {
+  let l = null;
+  try { l = localStorage.getItem(LANG_KEY); } catch (e) { /* ignore */ }
+  if (l === 'ar' || l === 'en') return l;
+  return /^ar/i.test(navigator.language || '') ? 'ar' : 'en';
+}
+function setLang(l, persist) {
+  LANG = l === 'ar' ? 'ar' : 'en';
+  if (persist) { try { localStorage.setItem(LANG_KEY, LANG); } catch (e) { /* ignore */ } }
+  const de = document.documentElement;
+  de.lang = LANG === 'ar' ? 'ar-EG' : 'en';
+  de.dir = LANG === 'ar' ? 'rtl' : 'ltr';
+  $$('.lang-switch button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.lang === LANG)));
+  applyStatic();
+  if (state) {
+    buildMonthSelect(); buildStatusSelect(); buildSettings(); buildAdjust('ded'); buildAdjust('add'); buildExpenseForm();
+    setMonth(state.selected.y, state.selected.m);
+  }
+}
+
+/* =====================================================================
+   INSTALL PROMPT (Android Chrome)
+   ===================================================================== */
+let deferredPrompt = null;
+const isStandalone = () => (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+function initInstall() {
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+    let dismissed = false;
+    try { dismissed = localStorage.getItem(INSTALL_KEY) === '1'; } catch (x) { /* ignore */ }
+    if (!dismissed && !isStandalone()) $('#install-banner').hidden = false;
+  });
+  window.addEventListener('appinstalled', () => { $('#install-banner').hidden = true; deferredPrompt = null; });
+  $('#install-btn').addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    try { await deferredPrompt.userChoice; } catch (e) { /* ignore */ }
+    deferredPrompt = null;
+    $('#install-banner').hidden = true;
+  });
+  $('#install-dismiss').addEventListener('click', () => {
+    $('#install-banner').hidden = true;
+    try { localStorage.setItem(INSTALL_KEY, '1'); } catch (e) { /* ignore */ }
+  });
+}
+
+/* =====================================================================
+   EVENTS
+   ===================================================================== */
+function bindEvents() {
+  // Language
+  $$('.lang-switch button').forEach(b => b.addEventListener('click', () => { if (b.dataset.lang !== LANG) setLang(b.dataset.lang, true); }));
+
+  // Month
+  $('#m-prev').addEventListener('click', () => shiftMonth(-1));
+  $('#m-next').addEventListener('click', () => shiftMonth(1));
+  $('#m-today').addEventListener('click', () => { const tp = parseISO(todayISO()); setMonth(tp.y, tp.m); });
+  $('#m-month').addEventListener('change', () => setMonth(state.selected.y, +$('#m-month').value));
+  $('#m-year').addEventListener('change', () => {
+    const v = $('#m-year').valueAsNumber;
+    if (!isNum(v) || !Number.isInteger(v) || v < 2000 || v > 2100) { $('#m-error').textContent = t('m_err_year'); $('#m-year').value = state.selected.y; return; }
+    setMonth(v, state.selected.m);
+  });
+
+  // Settings (delegated, because the form is rebuilt when the language changes)
+  const sb = $('#settings-body');
+  sb.addEventListener('input', onSettingEvent);
+  sb.addEventListener('change', onSettingEvent);
+  sb.addEventListener('input', onTierEvent);
+  sb.addEventListener('change', onTierEvent);
+  sb.addEventListener('input', e => {
+    if (e.target.id !== 'emp-name') return;
+    state.profile.name = e.target.value.trim().slice(0, 60);
+    save(); renderMonthTitle();
+  });
+  sb.addEventListener('change', e => {
+    const w = e.target.dataset && e.target.dataset.weekday;
+    if (w === undefined) return;
+    const s = cur().settings, n = +w;
+    const set = new Set(s.weekendDays);
+    if (e.target.checked) set.add(n); else set.delete(n);
+    s.weekendDays = Array.from(set).sort();
+    save(); renderCalculated();
+  });
+  sb.addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    const s = cur().settings;
+    if (b.dataset.ot) {
+      s.otMultiplier = parseFloat(b.dataset.ot);
+      $('#s-otMultiplier').value = s.otMultiplier;
+      $('[data-err="otMultiplier"]').textContent = '';
+      refreshOtPresets(); save(); renderCalculated();
+    } else if (b.id === 'tier-add') {
+      const last = s.lateTiers.reduce((a, x) => Math.max(a, x.from), 0);
+      if (s.lateTiers.length >= 20) { $('#tiers-err').textContent = t('tier_max'); return; }
+      s.lateTiers.push({ from: last + 30, value: 0 });
+      renderTiers(); save(); renderCalculated();
+    } else if (b.dataset.tierRemove !== undefined) {
+      s.lateTiers.splice(+b.dataset.tierRemove, 1);
+      renderTiers(); save(); renderCalculated();
+    }
+  });
+
+  // Attendance form
+  $('#att-form').addEventListener('submit', onAttSubmit);
+  ['#att-date', '#att-in', '#att-out'].forEach(id => $(id).addEventListener('input', () => { showAttMsg('', ''); updateAttPreview(); }));
+  $('#att-status').addEventListener('change', () => { syncStatusUI(); showAttMsg('', ''); updateAttPreview(); });
+  $('#att-official').addEventListener('click', () => {
+    const s = cur().settings;
+    if (NON_WORK.indexOf($('#att-status').value) >= 0) { $('#att-status').value = 'auto'; syncStatusUI(); }
+    $('#att-in').value = s.startTime; $('#att-out').value = s.endTime;
+    showAttMsg('', ''); updateAttPreview();
+  });
+  $('#att-cancel').addEventListener('click', () => resetAttForm());
+
+  // Attendance table (delegation)
+  $('#attendance').addEventListener('click', e => {
+    const b = e.target.closest('button[data-act]');
+    if (!b) return;
+    const id = b.dataset.id, act = b.dataset.act;
+    if (act === 'edit') startEditAtt(id);
+    else if (act === 'detail') { ui.detailId = ui.detailId === id ? null : id; renderAttendance(); renderAttDetail(); if (ui.detailId) $('#att-detail').scrollIntoView({ block: 'nearest' }); }
+    else if (act === 'detail-close') { ui.detailId = null; renderAttendance(); renderAttDetail(); }
+    else if (act === 'del') armConfirm(b, 'b_confirm', () => {
+      const md = cur();
+      md.records = md.records.filter(r => r.id !== id);
+      if (ui.editing.att === id) resetAttForm();
+      if (ui.detailId === id) ui.detailId = null;
+      save(); renderCalculated();
+    });
+  });
+
+  // Deductions / additions (delegated on the section, because the forms are rebuilt with the language)
+  ['ded', 'add'].forEach(p => {
+    const sec = $('#' + ADJ[p].key);
+    sec.addEventListener('submit', e => { if (e.target.id === p + '-form') onAdjSubmit(p, e); });
+    sec.addEventListener('click', e => {
+      if (e.target.id === p + '-cancel') { resetAdjForm(p); return; }
+      const b = e.target.closest('button[data-adj]');
+      if (!b || b.dataset.adj !== p) return;
+      const id = b.dataset.id;
+      if (b.dataset.act === 'edit') startEditAdj(p, id);
+      else armConfirm(b, 'b_confirm', () => {
+        const md = cur();
+        md[ADJ[p].key] = md[ADJ[p].key].filter(x => x.id !== id);
+        if (ui.editing[p] === id) resetAdjForm(p);
+        save(); renderCalculated();
+      });
+    });
+  });
+
+  // Expenses (delegated on the section, because the form/list are rebuilt with the language)
+  const expSec = $('#expenses');
+  expSec.addEventListener('submit', e => { if (e.target.id === 'exp-form') onExpenseSubmit(e); });
+  expSec.addEventListener('change', e => { if (e.target.id === 'exp-category') onExpenseCategoryChange(); });
+  expSec.addEventListener('click', e => {
+    if (e.target.id === 'exp-cancel') { resetExpenseForm(); return; }
+    if (e.target.id === 'exp-filter-clear') { resetExpenseFilterUI(); renderExpenses(); return; }
+    const b = e.target.closest('button[data-exp-act]');
+    if (!b) return;
+    const id = b.dataset.id;
+    if (b.dataset.expAct === 'edit') startEditExpense(id);
+    else armConfirm(b, 'b_confirm', () => {
+      const md = cur();
+      md.expenses = md.expenses.filter(x => x.id !== id);
+      if (ui.editing.exp === id) resetExpenseForm();
+      save(); renderExpenses();
+    });
+  });
+  $('#exp-filter-cat').addEventListener('change', () => { ui.expFilter.category = $('#exp-filter-cat').value; renderExpenses(); });
+  $('#exp-filter-from').addEventListener('change', () => { ui.expFilter.from = $('#exp-filter-from').value; renderExpenses(); });
+  $('#exp-filter-to').addEventListener('change', () => { ui.expFilter.to = $('#exp-filter-to').value; renderExpenses(); });
+
+  // Actual salary and notes
+  $('#actual-input').addEventListener('input', onActualInput);
+  $('#actual-input').addEventListener('change', onActualInput);
+  $('#actual-clear').addEventListener('click', () => { $('#actual-input').value = ''; onActualInput({ type: 'input' }); });
+  $('#month-notes').addEventListener('input', e => { cur().notes = e.target.value.slice(0, 2000); save(); renderSavedMonths(); });
+
+  // Shortcuts and navigation
+  document.addEventListener('click', e => {
+    const g = e.target.closest('[data-goto]');
+    if (g) {
+      if (!$('#expenses-overlay').hidden) closeExpensesOverlay();
+      const tg = document.getElementById(g.dataset.goto); if (tg) { tg.scrollIntoView({ block: 'start' }); if (g.dataset.goto === 'actual') $('#actual-input').focus(); }
+    }
+    const a = e.target.closest('nav.jump a');
+    if (a) {
+      if (a.getAttribute('href') === '#expenses') { e.preventDefault(); openExpensesOverlay(); return; }
+      const tg = document.querySelector(a.getAttribute('href')); if (tg && tg.tagName === 'DETAILS') tg.open = true;
+    }
+    const om = e.target.closest('[data-open-month]');
+    if (om) { const k = om.dataset.openMonth; setMonth(+k.slice(0, 4), +k.slice(5) - 1); $('#month').scrollIntoView({ block: 'start' }); }
+  });
+  $('#expenses-back').addEventListener('click', closeExpensesOverlay);
+
+  // Data
+  $('#export-btn').addEventListener('click', doExport);
+  $('#copy-btn').addEventListener('click', doCopy);
+  $('#import-btn').addEventListener('click', () => $('#import-file').click());
+  $('#import-file').addEventListener('change', e => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    const rd = new FileReader();
+    rd.onload = () => stageImport(String(rd.result));
+    rd.onerror = () => dataMsg(t('dm_unreadable'), 'error');
+    rd.readAsText(f);
+    e.target.value = '';
+  });
+  $('#import-text-btn').addEventListener('click', () => {
+    const tx = $('#backup-text').value.trim();
+    if (!tx) { dataMsg(t('dm_paste_first'), 'error'); return; }
+    stageImport(tx);
+  });
+  $('#import-confirm').addEventListener('click', e => {
+    if (e.target.id === 'import-go') applyImport();
+    if (e.target.id === 'import-cancel') { ui.staged = null; $('#import-confirm').hidden = true; }
+  });
+  $('#clear-month-btn').addEventListener('click', e => armConfirm(e.currentTarget, 'b_press_clear', clearMonth));
+  $('#reset-btn').addEventListener('click', e => armConfirm(e.currentTarget, 'b_press_reset', resetAll));
+  $('#demo-clear').addEventListener('click', resetAll);
+  $('#demo-dismiss').addEventListener('click', () => { state.demo = false; save(); updateBanner(); });
+
+  // Keep data safe when the app goes to the background or closes
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') save(); });
+  window.addEventListener('pagehide', save);
+}
+
+/* =====================================================================
+   START
+   ===================================================================== */
+function init() {
+  LANG = initialLang();
+  storageOK = detectStorage();
+  $('#storage-warning').hidden = storageOK;
+  const loaded = loadState();
+  state = loaded.state || (loaded.status === 'unreadable' ? defaultState() : demoState());
+  if (loaded.status === 'recovered') { const n = $('#data-notice'); n.textContent = t('dn_recovered'); n.hidden = false; }
+  if (loaded.status === 'unreadable') { const n = $('#data-notice'); n.textContent = t('dn_unreadable'); n.hidden = false; }
+  setLang(LANG, false);
+  buildMonthSelect(); buildStatusSelect(); buildSettings(); buildAdjust('ded'); buildAdjust('add'); buildExpenseForm();
+  bindEvents();
+  initInstall();
+  updateBanner();
+  setMonth(state.selected.y, state.selected.m);
+  requestPersist();
+  try {
+    if (window.claude && typeof window.claude.use === 'function') {
+      window.claude.use('downloads').then(function (d) { downloadsCap = d || null; }).catch(function () { downloadsCap = null; });
+    }
+  } catch (e) { downloadsCap = null; }
+}
+
+// Small hook so the calculation engine can be tested from the console or a test runner.
+window.SalaryApp = {
+  Calc: Calc, getState: () => state, setToday: iso => { todayOverride = iso; if (state) renderCalculated(); },
+  computed: () => ({ M: M, R: R }), sanitizeState: sanitizeState, setLang: l => setLang(l, true), getLang: () => LANG, t: t, I18N: I18N
+};
+
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+
+})();
+</script>
+<!--PWA:START-->
+<script>
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+  window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+}
+</script>
+<!--PWA:END-->
+</body>
+</html>
